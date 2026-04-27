@@ -3,7 +3,12 @@ grammar Grammar;
 prog: element* EOF;
 
 element
-    : ID (STRING)? attribute* (LBRACE element* RBRACE)?  # elementBlock
+    : ID shorthand* (STRING)? attribute* (LBRACE element* RBRACE)?  # elementBlock
+    ;
+
+shorthand
+    : '.' ID    # classShorthand
+    | '#' ID    # idShorthand
     ;
 
 attribute
