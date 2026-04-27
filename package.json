@@ -1,30 +1,21 @@
 {
   "name": "4less",
   "version": "1.0.0",
-  "description": "",
+  "description": "A minimal DSL that compiles to HTML, built with an ANTLR4 grammar",
   "main": "src/index.js",
-  "dependencies": {
-    "acorn": "^8.15.0",
-    "acorn-walk": "^8.3.4",
-    "antlr4": "^4.13.2",
-    "antlr4ts": "^0.5.0-alpha.4",
-    "antlr4ts-cli": "^0.5.0-alpha.4",
-    "arg": "^4.1.3",
-    "create-require": "^1.1.1",
-    "diff": "^4.0.2",
-    "make-error": "^1.3.6",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.2",
-    "undici-types": "^7.10.0",
-    "v8-compile-cache-lib": "^3.0.1",
-    "yn": "^3.1.1"
-  },
+  "type": "module",
+  "license": "MIT",
+  "author": "dzhonragon",
+  "keywords": ["html", "dsl", "parser", "antlr4", "compiler"],
   "scripts": {
-    "start": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/cli.js",
+    "generate": "cd src/parser && antlr4 -Dlanguage=JavaScript -visitor -no-listener -o . Grammar.g4",
+    "test": "vitest run"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module"
+  "dependencies": {
+    "antlr4": "^4.13.2"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.0"
+  }
 }
