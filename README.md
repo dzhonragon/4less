@@ -25,7 +25,7 @@ A minimal compiler with zero runtime dependencies. Lexer and parser are handwrit
 ## Install
 
 ```bash
-npm install 4less
+npm install @dzhonragon/4less
 ```
 
 Node 20+ required. No build step needed for the runtime.
@@ -46,7 +46,7 @@ npm test
 Compile 4less source to HTML. This is the main entry point for most use cases.
 
 ```ts
-import { compile } from '4less';
+import { compile } from '@dzhonragon/4less';
 
 compile('h1 "Hello"');                   // <h1>Hello</h1>
 compile('meta charset:"UTF-8"');         // <meta charset="UTF-8"/>
@@ -62,7 +62,7 @@ Throws `ParseError` on invalid input. Each error includes `line`, `col`, and `me
 Parse 4less source into an AST. Use this when you want to process the tree yourself.
 
 ```ts
-import { parse } from '4less';
+import { parse } from '@dzhonragon/4less';
 
 const ast = parse('a "Docs" href:"/docs"');
 // [

@@ -1,5 +1,5 @@
 {
-  "name": "4less",
+  "name": "@dzhonragon/4less",
   "version": "2.0.0",
   "description": "A minimal DSL that compiles to HTML",
   "type": "module",
