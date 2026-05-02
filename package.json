@@ -13,6 +13,10 @@
     "./vite": {
       "import": "./dist/plugins/vite.js",
       "types": "./dist/plugins/vite.d.ts"
+    },
+    "./webpack": {
+      "import": "./dist/plugins/webpack.js",
+      "types": "./dist/plugins/webpack.d.ts"
     }
   },
   "files": [
