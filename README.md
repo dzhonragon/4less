@@ -13,79 +13,292 @@ div#app.container {
 ```
 
 ```html
-<div id="app" class="container"><h1 class="title">Hello</h1><p>World</p><a href="/docs">Docs</a></div>
+<div id="app" class="container">
+  <h1 class="title">Hello</h1>
+  <p>World</p>
+  <a href="/docs">Docs</a>
+</div>
 ```
 
-A minimal compiler with zero dependencies. Lexer and parser are handwritten for simplicity and portability.
+A minimal compiler with zero runtime dependencies. Lexer and parser are handwritten in TypeScript. Output is pluggable through generators.
 
-## Setup
+## Install
 
-Node 20+ required. No build step needed.
+```bash
+npm install 4less
+```
+
+Node 20+ required. No build step needed for the runtime.
+
+## Setup (dev)
 
 ```bash
 npm install
 npm test
 ```
 
+---
+
 ## API
 
-```js
-import { parseInput } from './src/index.js';
+### `compile(input)`
 
-parseInput('h1 "Hello"');             // <h1>Hello</h1>
-parseInput('meta charset:"UTF-8"');   // <meta charset="UTF-8"/>
-parseInput('div.box { p "hi" }');     // <div class="box"><p>hi</p></div>
+Compile 4less source to HTML. This is the main entry point for most use cases.
+
+```ts
+import { compile } from '4less';
+
+compile('h1 "Hello"');                   // <h1>Hello</h1>
+compile('meta charset:"UTF-8"');         // <meta charset="UTF-8"/>
+compile('div.box { p "hi" }');           // <div class="box"><p>hi</p></div>
 ```
 
-`parseInput` throws a `ParseError` on invalid input. Each error includes line and column info.
+Throws `ParseError` on invalid input. Each error includes `line`, `col`, and `message`.
 
-## CLI
+---
 
-```bash
-echo 'h1 "Hello"' | node src/cli.js           # pipe to stdout
-node src/cli.js page.4l -o page.html           # compile to file
-node src/cli.js page.4l -o page.html --watch   # recompile on save
-node src/cli.js --help
+### `parse(input)`
+
+Parse 4less source into an AST. Use this when you want to process the tree yourself.
+
+```ts
+import { parse } from '4less';
+
+const ast = parse('a "Docs" href:"/docs"');
+// [
+//   {
+//     type: 'element',
+//     tag: 'a',
+//     id: null,
+//     classes: [],
+//     attributes: { href: '/docs' },
+//     text: 'Docs',
+//     children: []
+//   }
+// ]
 ```
+
+---
+
+### `generate(ast, generator)`
+
+Convert an AST to a string using any generator.
+
+```ts
+import { parse, generate, HtmlGenerator, JsonGenerator, ReactGenerator } from '4less';
+
+const ast = parse('div.container { p "Hello" }');
+
+generate(ast, new HtmlGenerator());
+// <div class="container"><p>Hello</p></div>
+
+generate(ast, new JsonGenerator());
+// [ { "type": "element", "tag": "div", ... } ]
+
+generate(ast, new ReactGenerator());
+// React.createElement('div', { className: "container" }, React.createElement('p', null, "Hello"))
+```
+
+---
+
+## Built-in Generators
+
+### `HtmlGenerator`
+
+Produces HTML5-compliant output:
+- Void elements (`meta`, `br`, `input`, `link`, etc.) render as self-closing
+- All other empty elements render with opening and closing tags
+- Text content and attribute values are HTML-escaped
+
+```ts
+import { compile } from '4less';
+
+compile('meta charset:"UTF-8"');     // <meta charset="UTF-8"/>
+compile('div');                      // <div></div>
+compile('p "<script>"');             // <p>&lt;script&gt;</p>
+```
+
+---
+
+### `JsonGenerator`
+
+Serializes the AST as a JSON array. Useful for tooling, analysis, or passing the tree across process boundaries.
+
+```ts
+import { parse, generate, JsonGenerator } from '4less';
+
+generate(parse('h1 "Title"'), new JsonGenerator());
+// [{ "type": "element", "tag": "h1", "text": "Title", ... }]
+
+// Configurable indentation (default: 2)
+new JsonGenerator(4)
+new JsonGenerator(0) // minified
+```
+
+---
+
+### `ReactGenerator`
+
+Produces `React.createElement()` calls. No JSX transpiler required.
+
+```ts
+import { parse, generate, ReactGenerator } from '4less';
+
+const gen = new ReactGenerator();
+
+generate(parse('h1 "Hello"'), gen);
+// React.createElement('h1', null, "Hello")
+
+generate(parse('div.box { p "Hi" }'), gen);
+// React.createElement('div', { className: "box" }, React.createElement('p', null, "Hi"))
+
+generate(parse('h1 "A" p "B"'), gen);
+// React.createElement(React.Fragment, null,
+//   React.createElement('h1', null, "A"),
+//   React.createElement('p', null, "B")
+// )
+```
+
+HTML → React prop name mappings are handled automatically (`class` → `className`, `for` → `htmlFor`, `tabindex` → `tabIndex`, etc.).
+
+---
 
 ## Syntax
 
 ```
-tag                          <tag/>
+tag                          <tag></tag>
 tag "text"                   <tag>text</tag>
-tag attr:"value"             <tag attr="value"/>
+tag attr:"value"             <tag attr="value"/>  (void) | <tag attr="value"></tag>
 tag "text" attr:"value"      <tag attr="value">text</tag>
-tag.class                    <tag class="class"/>
-tag#id                       <tag id="id"/>
-tag#id.foo.bar               <tag id="id" class="foo bar"/>
+tag.class                    <tag class="class"></tag>
+tag#id                       <tag id="id"></tag>
+tag#id.foo.bar               <tag id="id" class="foo bar"></tag>
 tag { child }                <tag><child/></tag>
 ```
 
 Order within an element: `tag shorthands? text? attributes? { children }?`
 
-## Error reporting
+---
 
-Invalid input prints specific errors with location info:
+## CLI
+
+```bash
+# pipe from stdin
+echo 'h1 "Hello"' | npx 4less
+
+# compile a file
+npx 4less page.4l
+
+# write to file
+npx 4less page.4l -o page.html
+
+# watch mode
+npx 4less page.4l -o page.html --watch
+
+# output as JSON
+npx 4less page.4l --format json
+
+# help
+npx 4less --help
+```
+
+---
+
+## Error Reporting
+
+Parse errors include location info:
+
+```bash
+$ echo '{ orphan }' | npx 4less
+line 1:0 extraneous input '}' expecting {<EOF>, ID}
+```
+
+In code:
+
+```ts
+import { compile, ParseError } from '4less';
+
+try {
+  compile('{ bad }');
+} catch (err) {
+  if (err instanceof ParseError) {
+    err.errors.forEach(e => {
+      console.error(`line ${e.line}:${e.col} — ${e.message}`);
+    });
+  }
+}
+```
+
+---
+
+## Custom Generators
+
+Extend `BaseGenerator` to create your own output format. The `generate(nodes)` method receives the full AST.
+
+```ts
+import { BaseGenerator, parse, generate } from '4less';
+import type { ElementNode } from '4less';
+
+class MarkdownGenerator extends BaseGenerator {
+  generate(nodes: ElementNode[]): string {
+    return nodes.map(n => this.renderNode(n)).join('\n');
+  }
+
+  private renderNode(node: ElementNode): string {
+    switch (node.tag) {
+      case 'h1': return `# ${node.text ?? ''}`;
+      case 'h2': return `## ${node.text ?? ''}`;
+      case 'h3': return `### ${node.text ?? ''}`;
+      case 'p':  return node.text ?? '';
+      case 'a':  return `[${node.text ?? ''}](${node.attributes.href ?? ''})`;
+      default:   return node.children.map(c => this.renderNode(c)).join('\n');
+    }
+  }
+}
+
+const ast = parse('h1 "Hello" p "World" a "Docs" href:"/docs"');
+generate(ast, new MarkdownGenerator());
+// # Hello
+// World
+// [Docs](/docs)
+```
+
+---
+
+## `ElementNode` Shape
+
+Every node in the AST has this shape:
+
+```ts
+interface ElementNode {
+  type: 'element';
+  tag: string;                      // e.g. 'div', 'h1', 'meta'
+  id: string | null;                // from #id shorthand
+  classes: string[];                // from .class shorthands
+  attributes: Record<string, string>; // from key:"value" pairs
+  text: string | null;              // from "string literal"
+  children: ElementNode[];          // from { ... } block
+}
+```
+
+**Precedence** when rendering: `children > text > self-closing`.
+
+---
+
+## How It Works
 
 ```
-$ echo '{ orphan }' | node src/cli.js
-line 1:0 extraneous input '{' expecting {<EOF>, ID}
+Input string
+  → tokenize()    [core/lexer.ts]    → Token[]
+  → buildAst()    [core/parser.ts]   → ElementNode[]
+  → generator     [generators/*.ts]  → string
 ```
 
-## How it works
+1. **Lexer** converts raw text into tokens (`ID`, `STRING`, `DOT`, `HASH`, `COLON`, `LBRACE`, `RBRACE`)
+2. **Parser** builds an AST using recursive descent
+3. **Generator** walks the AST and produces output — HTML, JSON, React, or anything you implement
 
-1. **Lexer** tokenizes input
-2. **Parser** builds an Abstract Syntax Tree (AST)
-3. **Generator** walks the AST and emits output (HTML, JSON, or custom format)
-
-```js
-import { parse, generate, HtmlGenerator } from '4less';
-
-const ast = parse('div { p "Hello" }');
-const html = generate(ast, HtmlGenerator);
-```
-
-Create custom generators by extending the `generate()` API.
+---
 
 ## Tests
 
@@ -93,7 +306,9 @@ Create custom generators by extending the `generate()` API.
 npm test
 ```
 
-26 tests across self-closing tags, text content, attributes, `.class` and `#id` shorthands, nesting, siblings, full document structures, and error cases. Runs with [Vitest](https://vitest.dev/).
+64 tests covering lexer, parser, all three generators, and the full pipeline.
+
+---
 
 ## License
 
