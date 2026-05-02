@@ -1,21 +1,40 @@
 {
   "name": "4less",
-  "version": "1.0.0",
-  "description": "A minimal DSL that compiles to HTML, built with an ANTLR4 grammar",
-  "main": "src/index.js",
+  "version": "2.0.0",
+  "description": "A minimal DSL that compiles to HTML",
   "type": "module",
-  "license": "MIT",
-  "author": "dzhonragon",
-  "keywords": ["html", "dsl", "parser", "antlr4", "compiler"],
-  "scripts": {
-    "start": "node src/cli.js",
-    "generate": "cd src/parser && antlr4 -Dlanguage=JavaScript -visitor -no-listener -o . Grammar.g4",
-    "test": "vitest run"
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
-  "dependencies": {
-    "antlr4": "^4.13.2"
+  "files": ["dist/"],
+  "bin": {
+    "4less": "dist/cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "html",
+    "dsl",
+    "parser",
+    "compiler",
+    "template"
+  ],
+  "author": "dzhonragon",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
     "vitest": "^2.0.0"
   }
 }

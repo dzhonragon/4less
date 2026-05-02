@@ -16,15 +16,14 @@ div#app.container {
 <div id="app" class="container"><h1 class="title">Hello</h1><p>World</p><a href="/docs">Docs</a></div>
 ```
 
-A small compiler built on an [ANTLR4](https://www.antlr.org/) grammar. The grammar defines the syntax in one `.g4` file, ANTLR4 generates the lexer and parser, and a visitor walks the parse tree to produce HTML strings.
+A minimal compiler with zero dependencies. Lexer and parser are handwritten for simplicity and portability.
 
 ## Setup
 
-You need Java to run the ANTLR4 tool (generates the lexer/parser from the grammar, done once). Everything else is Node 20+.
+Node 20+ required. No build step needed.
 
 ```bash
 npm install
-npm run generate
 npm test
 ```
 
@@ -75,11 +74,18 @@ line 1:0 extraneous input '{' expecting {<EOF>, ID}
 
 ## How it works
 
-1. Input is tokenized by `GrammarLexer` into a `CommonTokenStream`
-2. `GrammarParser` builds a parse tree from the token stream
-3. `HtmlGenerator` (a visitor) walks the tree and emits HTML node by node
+1. **Lexer** tokenizes input
+2. **Parser** builds an Abstract Syntax Tree (AST)
+3. **Generator** walks the AST and emits output (HTML, JSON, or custom format)
 
-The only source of truth for the syntax is `src/parser/Grammar.g4`. Change it, run `npm run generate`, and the lexer/parser/visitor update automatically.
+```js
+import { parse, generate, HtmlGenerator } from '4less';
+
+const ast = parse('div { p "Hello" }');
+const html = generate(ast, HtmlGenerator);
+```
+
+Create custom generators by extending the `generate()` API.
 
 ## Tests
 

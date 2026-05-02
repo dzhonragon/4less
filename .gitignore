@@ -6,7 +6,3 @@ dist
 .vscode
 .DS_Store
 .env
-antlr*.jar
-src/parser/*.js
-src/parser/*.tokens
-src/parser/*.interp

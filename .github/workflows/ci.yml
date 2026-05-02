@@ -20,14 +20,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Set up ANTLR4
-        run: |
-          curl -sL https://www.antlr.org/download/antlr-4.13.2-complete.jar -o /tmp/antlr4.jar
-          printf '#!/bin/sh\nexec java -jar /tmp/antlr4.jar "$@"\n' | sudo tee /usr/local/bin/antlr4 > /dev/null
-          sudo chmod +x /usr/local/bin/antlr4
-
-      - name: Generate parser
-        run: npm run generate
+      - name: Build
+        run: npm run build
 
       - name: Run tests
         run: npm test
