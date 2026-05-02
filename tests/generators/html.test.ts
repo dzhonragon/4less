@@ -108,4 +108,31 @@ describe('HtmlGenerator', () => {
     ];
     expect(genWithVars.generate(ast)).toBe('<p>&lt;b&gt;bold&lt;/b&gt;</p>');
   });
+
+  it('renders loop placeholder when items array not provided', () => {
+    const loop: import('../../src/core/types.js').LoopNode = {
+      type: 'loop', variable: 'item', iterable: 'items',
+      body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'item' }], children: [] },
+    };
+    expect(gen.generate([loop])).toBe('{{for item in items}}');
+  });
+
+  it('renders loop items when array provided', () => {
+    const loop: import('../../src/core/types.js').LoopNode = {
+      type: 'loop', variable: 'item', iterable: 'items',
+      body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'item' }], children: [] },
+    };
+    const genWithVars = new HtmlGenerator({ vars: { items: ['a', 'b', 'c'] } });
+    expect(genWithVars.generate([loop])).toBe('<li>a</li><li>b</li><li>c</li>');
+  });
+
+  it('renders loop nested inside a parent element', () => {
+    const loop: import('../../src/core/types.js').LoopNode = {
+      type: 'loop', variable: 'x', iterable: 'list',
+      body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'x' }], children: [] },
+    };
+    const ul: ElementNode = { type: 'element', tag: 'ul', id: null, classes: [], attributes: {}, text: null, children: [loop] };
+    const genWithVars = new HtmlGenerator({ vars: { list: ['one', 'two'] } });
+    expect(genWithVars.generate([ul])).toBe('<ul><li>one</li><li>two</li></ul>');
+  });
 });

@@ -1,4 +1,4 @@
-import type { Token, ElementNode, TextSegment } from './types.js';
+import type { Token, ElementNode, LoopNode, AstNode, TextSegment } from './types.js';
 import { ParseError } from '../errors.js';
 
 class Parser {
@@ -28,8 +28,8 @@ class Parser {
     return tok;
   }
 
-  parseProg(): ElementNode[] {
-    const elements: ElementNode[] = [];
+  parseProg(): AstNode[] {
+    const nodes: AstNode[] = [];
     while (this.peek().type !== 'EOF') {
       const tok = this.peek();
       if (tok.type === 'RBRACE') {
@@ -50,9 +50,28 @@ class Parser {
           },
         ]);
       }
-      elements.push(this.parseElement());
+      nodes.push(tok.value === 'for' ? this.parseLoop() : this.parseElement());
     }
-    return elements;
+    return nodes;
+  }
+
+  private parseLoop(): LoopNode {
+    this.consume('ID'); // 'for'
+    const variable = this.consume('ID').value!;
+    const inTok = this.consume('ID');
+    if (inTok.value !== 'in') {
+      throw new ParseError([
+        {
+          line: inTok.line,
+          col: inTok.col,
+          message: `expected 'in' but got '${inTok.value}'`,
+        },
+      ]);
+    }
+    const iterable = this.consume('ID').value!;
+    this.consume('COLON');
+    const body = this.parseElement();
+    return { type: 'loop', variable, iterable, body };
   }
 
   private parseElement(): ElementNode {
@@ -97,7 +116,7 @@ class Parser {
       attributes[key] = this.consume('STRING').value!;
     }
 
-    let children: ElementNode[] = [];
+    let children: AstNode[] = [];
     if (this.peek().type === 'LBRACE') {
       this.consume('LBRACE');
       while (this.peek().type !== 'RBRACE') {
@@ -111,23 +130,18 @@ class Parser {
             },
           ]);
         }
-        children.push(this.parseElement());
+        const tok = this.peek();
+        children.push(tok.type === 'ID' && tok.value === 'for'
+          ? this.parseLoop()
+          : this.parseElement());
       }
       this.consume('RBRACE');
     }
 
-    return {
-      type: 'element',
-      tag,
-      id,
-      classes,
-      attributes,
-      text,
-      children,
-    };
+    return { type: 'element', tag, id, classes, attributes, text, children };
   }
 }
 
-export function buildAst(tokens: Token[]): ElementNode[] {
+export function buildAst(tokens: Token[]): AstNode[] {
   return new Parser(tokens).parseProg();
 }

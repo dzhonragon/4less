@@ -1,33 +1,34 @@
 import { BaseGenerator } from './base.js';
-import type { ElementNode, TextSegment } from '../core/types.js';
+import type { AstNode, ElementNode, LoopNode, TextSegment } from '../core/types.js';
 
 const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
   'link', 'meta', 'param', 'source', 'track', 'wbr',
 ]);
 
-/**
- * Generates Vue 3 template-compatible HTML.
- *
- * Output is valid inside a Vue SFC <template> block or for use with v-html.
- *
- * Usage:
- * ```ts
- * import { parse, generate, VueGenerator } from '4less';
- *
- * const ast = parse('div.container { h1 "Hello" }');
- * const template = generate(ast, new VueGenerator());
- * // <div class="container"><h1>Hello</h1></div>
- * ```
- *
- * Wrap in a template block:
- * ```ts
- * const sfc = `<template>\n${template}\n</template>`;
- * ```
- */
 export class VueGenerator extends BaseGenerator {
-  generate(nodes: ElementNode[]): string {
-    return nodes.map(n => this.renderElement(n)).join('');
+  generate(nodes: AstNode[]): string {
+    return nodes.map(n => this.renderNode(n)).join('');
+  }
+
+  private renderNode(node: AstNode): string {
+    return node.type === 'loop' ? this.renderLoop(node) : this.renderElement(node);
+  }
+
+  private renderLoop(node: LoopNode): string {
+    const attrs = this.buildAttrs(node.body);
+    const vFor = `v-for="${node.variable} in ${node.iterable}"`;
+    const attrsStr = attrs ? ` ${attrs} ${vFor}` : ` ${vFor}`;
+    const content = this.renderBodyContent(node.body);
+    return `<${node.body.tag}${attrsStr}>${content}</${node.body.tag}>`;
+  }
+
+  private renderBodyContent(node: ElementNode): string {
+    if (node.children.length > 0) {
+      return node.children.map(c => this.renderNode(c)).join('');
+    }
+    if (node.text !== null) return this.renderText(node.text);
+    return '';
   }
 
   private renderElement(node: ElementNode): string {
@@ -36,7 +37,7 @@ export class VueGenerator extends BaseGenerator {
     const isVoid = VOID_ELEMENTS.has(node.tag);
 
     if (node.children.length > 0) {
-      const children = node.children.map(c => this.renderElement(c)).join('');
+      const children = node.children.map(c => this.renderNode(c)).join('');
       return `<${node.tag}${attrsStr}>${children}</${node.tag}>`;
     }
 
@@ -44,9 +45,7 @@ export class VueGenerator extends BaseGenerator {
       return `<${node.tag}${attrsStr}>${this.renderText(node.text)}</${node.tag}>`;
     }
 
-    return isVoid
-      ? `<${node.tag}${attrsStr}/>`
-      : `<${node.tag}${attrsStr}></${node.tag}>`;
+    return isVoid ? `<${node.tag}${attrsStr}/>` : `<${node.tag}${attrsStr}></${node.tag}>`;
   }
 
   private renderText(segments: TextSegment[]): string {
@@ -57,7 +56,6 @@ export class VueGenerator extends BaseGenerator {
 
   private buildAttrs(node: ElementNode): string {
     const parts: string[] = [];
-
     if (node.id) parts.push(`id="${this.escapeAttr(node.id)}"`);
     if (node.classes.length > 0) {
       parts.push(`class="${node.classes.map(c => this.escapeAttr(c)).join(' ')}"`);
@@ -65,7 +63,6 @@ export class VueGenerator extends BaseGenerator {
     for (const [key, value] of Object.entries(node.attributes)) {
       parts.push(`${key}="${this.escapeAttr(value)}"`);
     }
-
     return parts.join(' ');
   }
 

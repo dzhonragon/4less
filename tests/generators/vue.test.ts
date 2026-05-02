@@ -64,4 +64,21 @@ describe('VueGenerator', () => {
     const ast = [el('p', { text: [{ kind: 'literal', value: 'Hello ' }, { kind: 'var', name: 'name' }] })];
     expect(gen.generate(ast)).toBe('<p>Hello {{ name }}</p>');
   });
+
+  it('renders loop as v-for directive', () => {
+    const loop: import('../../src/core/types.js').LoopNode = {
+      type: 'loop', variable: 'item', iterable: 'items',
+      body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'item' }], children: [] },
+    };
+    expect(gen.generate([loop])).toBe('<li v-for="item in items">{{ item }}</li>');
+  });
+
+  it('renders loop nested inside a parent element', () => {
+    const loop: import('../../src/core/types.js').LoopNode = {
+      type: 'loop', variable: 'x', iterable: 'list',
+      body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'x' }], children: [] },
+    };
+    const ul = el('ul', { children: [loop] });
+    expect(gen.generate([ul])).toBe('<ul><li v-for="x in list">{{ x }}</li></ul>');
+  });
 });

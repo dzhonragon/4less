@@ -122,4 +122,37 @@ describe('buildAst', () => {
       { kind: 'var', name: 'last' },
     ]);
   });
+
+  it('parses a for loop', () => {
+    const tokens = tokenize('for item in items: li $item');
+    const ast = buildAst(tokens);
+    expect(ast).toHaveLength(1);
+    expect(ast[0]).toMatchObject({
+      type: 'loop',
+      variable: 'item',
+      iterable: 'items',
+    });
+  });
+
+  it('loop body is an ElementNode', () => {
+    const tokens = tokenize('for item in items: li $item');
+    const ast = buildAst(tokens);
+    const loop = ast[0] as import('../../src/core/types.js').LoopNode;
+    expect(loop.body.tag).toBe('li');
+    expect(loop.body.text).toEqual([{ kind: 'var', name: 'item' }]);
+  });
+
+  it('parses loop nested inside a parent element', () => {
+    const tokens = tokenize('ul { for item in items: li $item }');
+    const ast = buildAst(tokens);
+    expect(ast[0]).toMatchObject({ type: 'element', tag: 'ul' });
+    const ul = ast[0] as import('../../src/core/types.js').ElementNode;
+    expect(ul.children).toHaveLength(1);
+    expect(ul.children[0]).toMatchObject({ type: 'loop', variable: 'item', iterable: 'items' });
+  });
+
+  it('throws when "in" keyword is missing', () => {
+    const tokens = tokenize('for item items: li $item');
+    expect(() => buildAst(tokens)).toThrow(ParseError);
+  });
 });

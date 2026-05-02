@@ -140,6 +140,42 @@ describe('variables', () => {
   });
 });
 
+describe('loops', () => {
+  it('renders loop placeholder when items not provided', () => {
+    expect(compile('ul { for item in items: li $item }')).toBe(
+      '<ul>{{for item in items}}</ul>'
+    );
+  });
+
+  it('renders loop items when array provided', () => {
+    expect(compile('ul { for item in items: li $item }', { items: ['a', 'b', 'c'] })).toBe(
+      '<ul><li>a</li><li>b</li><li>c</li></ul>'
+    );
+  });
+
+  it('renders empty array as empty string', () => {
+    expect(compile('ul { for item in items: li $item }', { items: [] })).toBe('<ul></ul>');
+  });
+
+  it('loop body can have classes and attributes', () => {
+    expect(compile('ul { for item in items: li.entry $item }', { items: ['x'] })).toBe(
+      '<ul><li class="entry">x</li></ul>'
+    );
+  });
+
+  it('loop variable resolves independently from outer vars', () => {
+    expect(compile('ul { for item in items: li $item }', { items: ['one', 'two'], item: 'ignored' })).toBe(
+      '<ul><li>one</li><li>two</li></ul>'
+    );
+  });
+
+  it('top-level loop renders without wrapper', () => {
+    expect(compile('for item in items: p $item', { items: ['x', 'y'] })).toBe(
+      '<p>x</p><p>y</p>'
+    );
+  });
+});
+
 describe('error handling', () => {
   it('reports unexpected closing brace', () => {
     expect(() => compile('{ orphan }')).toThrow(ParseError);

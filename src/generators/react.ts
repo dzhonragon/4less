@@ -1,7 +1,6 @@
 import { BaseGenerator } from './base.js';
-import type { ElementNode, TextSegment } from '../core/types.js';
+import type { AstNode, ElementNode, LoopNode, TextSegment } from '../core/types.js';
 
-// HTML attributes that must be renamed for React
 const REACT_PROP_MAP: Record<string, string> = {
   class: 'className',
   for: 'htmlFor',
@@ -23,12 +22,19 @@ const REACT_PROP_MAP: Record<string, string> = {
 };
 
 export class ReactGenerator extends BaseGenerator {
-  generate(nodes: ElementNode[]): string {
-    if (nodes.length === 1) {
-      return this.renderElement(nodes[0]);
-    }
-    const children = nodes.map(n => this.renderElement(n)).join(', ');
+  generate(nodes: AstNode[]): string {
+    if (nodes.length === 1) return this.renderNode(nodes[0]);
+    const children = nodes.map(n => this.renderNode(n)).join(', ');
     return `React.createElement(React.Fragment, null, ${children})`;
+  }
+
+  private renderNode(node: AstNode): string {
+    return node.type === 'loop' ? this.renderLoop(node) : this.renderElement(node);
+  }
+
+  private renderLoop(node: LoopNode): string {
+    const bodyExpr = this.renderElement(node.body);
+    return `${node.iterable}.map((${node.variable}) => ${bodyExpr})`;
   }
 
   private renderElement(node: ElementNode): string {
@@ -36,7 +42,7 @@ export class ReactGenerator extends BaseGenerator {
     const propsArg = props ? `, ${props}` : ', null';
 
     if (node.children.length > 0) {
-      const children = node.children.map(c => this.renderElement(c)).join(', ');
+      const children = node.children.map(c => this.renderNode(c)).join(', ');
       return `React.createElement('${node.tag}'${propsArg}, ${children})`;
     }
 
@@ -56,20 +62,14 @@ export class ReactGenerator extends BaseGenerator {
 
   private buildProps(node: ElementNode): string {
     const props: string[] = [];
-
-    if (node.id) {
-      props.push(`id: ${JSON.stringify(node.id)}`);
-    }
-
+    if (node.id) props.push(`id: ${JSON.stringify(node.id)}`);
     if (node.classes.length > 0) {
       props.push(`className: ${JSON.stringify(node.classes.join(' '))}`);
     }
-
     for (const [key, value] of Object.entries(node.attributes)) {
       const reactKey = REACT_PROP_MAP[key] ?? key;
       props.push(`${reactKey}: ${JSON.stringify(value)}`);
     }
-
     if (props.length === 0) return '';
     return `{ ${props.join(', ')} }`;
   }

@@ -1,5 +1,5 @@
 import { BaseGenerator } from './base.js';
-import type { ElementNode, TextSegment } from '../core/types.js';
+import type { AstNode, ElementNode, LoopNode, TextSegment } from '../core/types.js';
 
 const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -13,27 +13,6 @@ export interface AstroGeneratorOptions {
   fragment?: boolean;
 }
 
-/**
- * Generates Astro component (.astro) markup.
- *
- * Usage:
- * ```ts
- * import { parse, generate, AstroGenerator } from '4less';
- *
- * const ast = parse('div.container { h1 "Hello" }');
- *
- * // Template only (for embedding in .astro files)
- * generate(ast, new AstroGenerator());
- * // <div class="container"><h1>Hello</h1></div>
- *
- * // Full .astro component with frontmatter
- * generate(ast, new AstroGenerator({ frontmatter: 'const title = "Hello";' }));
- * // ---
- * // const title = "Hello";
- * // ---
- * // <div class="container"><h1>Hello</h1></div>
- * ```
- */
 export class AstroGenerator extends BaseGenerator {
   private options: Required<AstroGeneratorOptions>;
 
@@ -45,20 +24,28 @@ export class AstroGenerator extends BaseGenerator {
     };
   }
 
-  generate(nodes: ElementNode[]): string {
+  generate(nodes: AstNode[]): string {
     const template = this.renderTemplate(nodes);
     const { frontmatter } = this.options;
-
     if (!frontmatter) return template;
     return `---\n${frontmatter}\n---\n${template}`;
   }
 
-  private renderTemplate(nodes: ElementNode[]): string {
-    const rendered = nodes.map(n => this.renderElement(n)).join('');
+  private renderTemplate(nodes: AstNode[]): string {
+    const rendered = nodes.map(n => this.renderNode(n)).join('');
     if (nodes.length > 1 && this.options.fragment) {
       return `<>${rendered}</>`;
     }
     return rendered;
+  }
+
+  private renderNode(node: AstNode): string {
+    return node.type === 'loop' ? this.renderLoop(node) : this.renderElement(node);
+  }
+
+  private renderLoop(node: LoopNode): string {
+    const bodyExpr = this.renderElement(node.body);
+    return `{${node.iterable}.map((${node.variable}) => ${bodyExpr})}`;
   }
 
   private renderElement(node: ElementNode): string {
@@ -67,7 +54,7 @@ export class AstroGenerator extends BaseGenerator {
     const isVoid = VOID_ELEMENTS.has(node.tag);
 
     if (node.children.length > 0) {
-      const children = node.children.map(c => this.renderElement(c)).join('');
+      const children = node.children.map(c => this.renderNode(c)).join('');
       return `<${node.tag}${attrsStr}>${children}</${node.tag}>`;
     }
 
@@ -75,9 +62,7 @@ export class AstroGenerator extends BaseGenerator {
       return `<${node.tag}${attrsStr}>${this.renderText(node.text)}</${node.tag}>`;
     }
 
-    return isVoid
-      ? `<${node.tag}${attrsStr} />`
-      : `<${node.tag}${attrsStr} />`;
+    return isVoid ? `<${node.tag}${attrsStr} />` : `<${node.tag}${attrsStr} />`;
   }
 
   private renderText(segments: TextSegment[]): string {

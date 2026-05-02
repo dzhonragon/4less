@@ -20,6 +20,18 @@ export type TextSegment =
   | { kind: 'literal'; value: string }
   | { kind: 'var'; name: string };
 
+export type VarValue = string | string[];
+export type VarsMap = Record<string, VarValue>;
+
+export type AstNode = ElementNode | LoopNode;
+
+export interface LoopNode {
+  type: 'loop';
+  variable: string;
+  iterable: string;
+  body: ElementNode;
+}
+
 export interface ElementNode {
   type: 'element';
   tag: string;
@@ -27,5 +39,5 @@ export interface ElementNode {
   classes: string[];
   attributes: Record<string, string>;
   text: TextSegment[] | null;
-  children: ElementNode[];
+  children: AstNode[];
 }

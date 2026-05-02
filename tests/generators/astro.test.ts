@@ -80,4 +80,23 @@ describe('AstroGenerator', () => {
     const ast = [el('p', { text: [{ kind: 'literal', value: 'Hello ' }, { kind: 'var', name: 'name' }] })];
     expect(gen.generate(ast)).toBe('<p>Hello {name}</p>');
   });
+
+  it('renders loop as {iterable.map()} expression', () => {
+    const gen = new AstroGenerator();
+    const loop: import('../../src/core/types.js').LoopNode = {
+      type: 'loop', variable: 'item', iterable: 'items',
+      body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'item' }], children: [] },
+    };
+    expect(gen.generate([loop])).toBe('{items.map((item) => <li>{item}</li>)}');
+  });
+
+  it('renders loop nested inside a parent element', () => {
+    const gen = new AstroGenerator();
+    const loop: import('../../src/core/types.js').LoopNode = {
+      type: 'loop', variable: 'x', iterable: 'list',
+      body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'x' }], children: [] },
+    };
+    const ul = el('ul', { children: [loop] });
+    expect(gen.generate([ul])).toBe('<ul>{list.map((x) => <li>{x}</li>)}</ul>');
+  });
 });

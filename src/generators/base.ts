@@ -1,5 +1,5 @@
-import type { ElementNode } from '../core/types.js';
+import type { AstNode } from '../core/types.js';
 
 export abstract class BaseGenerator {
-  abstract generate(nodes: ElementNode[]): string;
+  abstract generate(nodes: AstNode[]): string;
 }
