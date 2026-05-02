@@ -10,6 +10,7 @@ export { BaseGenerator } from './generators/base.js';
 export { HtmlGenerator } from './generators/html.js';
 export { JsonGenerator } from './generators/json.js';
 export { ReactGenerator } from './generators/react.js';
+export { VueGenerator } from './generators/vue.js';
 export type { Token, ElementNode } from './core/types.js';
 
 export function parse(input: string): ElementNode[] {
