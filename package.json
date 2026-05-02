@@ -1,7 +1,7 @@
 {
   "name": "@dzhonragon/4less",
   "version": "2.0.0",
-  "description": "A minimal DSL that compiles to HTML",
+  "description": "Minimal DSL for HTML with variables, loops & conditionals. Zero dependencies. Compile to React, Vue, Astro, or plain HTML.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
