@@ -20,16 +20,22 @@ export type TextSegment =
   | { kind: 'literal'; value: string }
   | { kind: 'var'; name: string };
 
-export type VarValue = string | string[];
+export type VarValue = string | string[] | boolean;
 export type VarsMap = Record<string, VarValue>;
 
-export type AstNode = ElementNode | LoopNode;
+export type AstNode = ElementNode | LoopNode | CondNode;
 
 export interface LoopNode {
   type: 'loop';
   variable: string;
   iterable: string;
   body: ElementNode;
+}
+
+export interface CondNode {
+  type: 'cond';
+  condition: string;
+  body: AstNode;
 }
 
 export interface ElementNode {

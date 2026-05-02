@@ -1,5 +1,5 @@
 import { BaseGenerator } from './base.js';
-import type { AstNode, ElementNode, LoopNode, TextSegment } from '../core/types.js';
+import type { AstNode, CondNode, ElementNode, LoopNode, TextSegment } from '../core/types.js';
 
 const REACT_PROP_MAP: Record<string, string> = {
   class: 'className',
@@ -29,12 +29,19 @@ export class ReactGenerator extends BaseGenerator {
   }
 
   private renderNode(node: AstNode): string {
-    return node.type === 'loop' ? this.renderLoop(node) : this.renderElement(node);
+    if (node.type === 'loop') return this.renderLoop(node);
+    if (node.type === 'cond') return this.renderCond(node);
+    return this.renderElement(node);
   }
 
   private renderLoop(node: LoopNode): string {
     const bodyExpr = this.renderElement(node.body);
     return `${node.iterable}.map((${node.variable}) => ${bodyExpr})`;
+  }
+
+  private renderCond(node: CondNode): string {
+    const bodyExpr = this.renderNode(node.body);
+    return `${node.condition} ? ${bodyExpr} : null`;
   }
 
   private renderElement(node: ElementNode): string {

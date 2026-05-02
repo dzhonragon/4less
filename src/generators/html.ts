@@ -1,5 +1,5 @@
 import { BaseGenerator } from './base.js';
-import type { AstNode, ElementNode, LoopNode, TextSegment, VarsMap } from '../core/types.js';
+import type { AstNode, CondNode, ElementNode, LoopNode, TextSegment, VarsMap } from '../core/types.js';
 
 const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -7,7 +7,7 @@ const VOID_ELEMENTS = new Set([
 ]);
 
 export interface HtmlGeneratorOptions {
-  /** Variable values to substitute. Strings used in text; arrays iterated in loops. */
+  /** Variable values to substitute. Strings in text; arrays in loops; booleans in conditionals. */
   vars?: VarsMap;
 }
 
@@ -25,20 +25,26 @@ export class HtmlGenerator extends BaseGenerator {
   }
 
   private renderNode(node: AstNode): string {
-    return node.type === 'loop' ? this.renderLoop(node) : this.renderElement(node);
+    if (node.type === 'loop') return this.renderLoop(node);
+    if (node.type === 'cond') return this.renderCond(node);
+    return this.renderElement(node);
   }
 
   private renderLoop(node: LoopNode): string {
     const items = this.vars[node.iterable];
-    if (!Array.isArray(items)) {
-      return `{{for ${node.variable} in ${node.iterable}}}`;
-    }
+    if (!Array.isArray(items)) return `{{for ${node.variable} in ${node.iterable}}}`;
     return items.map(item => {
       this.localVars[node.variable] = item;
       const result = this.renderElement(node.body);
       delete this.localVars[node.variable];
       return result;
     }).join('');
+  }
+
+  private renderCond(node: CondNode): string {
+    const val = this.localVars[node.condition] ?? this.vars[node.condition];
+    if (!val) return '';
+    return this.renderNode(node.body);
   }
 
   private renderElement(node: ElementNode): string {
@@ -52,8 +58,7 @@ export class HtmlGenerator extends BaseGenerator {
     }
 
     if (node.text !== null) {
-      const content = this.renderText(node.text);
-      return `<${node.tag}${attrsStr}>${content}</${node.tag}>`;
+      return `<${node.tag}${attrsStr}>${this.renderText(node.text)}</${node.tag}>`;
     }
 
     if (isVoid) return `<${node.tag}${attrsStr}/>`;
@@ -64,8 +69,7 @@ export class HtmlGenerator extends BaseGenerator {
     return segments.map(seg => {
       if (seg.kind === 'literal') return this.escapeHtml(seg.value);
       const val = this.localVars[seg.name] ?? this.vars[seg.name];
-      if (val === undefined) return `{{${seg.name}}}`;
-      if (Array.isArray(val)) return `{{${seg.name}}}`;
+      if (val === undefined || typeof val !== 'string') return `{{${seg.name}}}`;
       return this.escapeHtml(val);
     }).join('');
   }

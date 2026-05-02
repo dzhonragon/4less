@@ -135,4 +135,40 @@ describe('HtmlGenerator', () => {
     const genWithVars = new HtmlGenerator({ vars: { list: ['one', 'two'] } });
     expect(genWithVars.generate([ul])).toBe('<ul><li>one</li><li>two</li></ul>');
   });
+
+  it('renders nothing when condition is false', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'show',
+      body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Hi'), children: [] },
+    };
+    const genFalse = new HtmlGenerator({ vars: { show: false } });
+    expect(genFalse.generate([cond])).toBe('');
+  });
+
+  it('renders body when condition is true', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'show',
+      body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Hi'), children: [] },
+    };
+    const genTrue = new HtmlGenerator({ vars: { show: true } });
+    expect(genTrue.generate([cond])).toBe('<p>Hi</p>');
+  });
+
+  it('renders nothing when condition variable is undefined', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'missing',
+      body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Hi'), children: [] },
+    };
+    expect(gen.generate([cond])).toBe('');
+  });
+
+  it('renders conditional inside parent element', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'show',
+      body: { type: 'element', tag: 'span', id: null, classes: [], attributes: {}, text: lit('yes'), children: [] },
+    };
+    const div: ElementNode = { type: 'element', tag: 'div', id: null, classes: [], attributes: {}, text: null, children: [cond] };
+    const genTrue = new HtmlGenerator({ vars: { show: true } });
+    expect(genTrue.generate([div])).toBe('<div><span>yes</span></div>');
+  });
 });

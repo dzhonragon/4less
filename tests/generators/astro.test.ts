@@ -99,4 +99,37 @@ describe('AstroGenerator', () => {
     const ul = el('ul', { children: [loop] });
     expect(gen.generate([ul])).toBe('<ul>{list.map((x) => <li>{x}</li>)}</ul>');
   });
+
+  it('renders conditional as && expression', () => {
+    const gen = new AstroGenerator();
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'isVisible',
+      body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Hello'), children: [] },
+    };
+    expect(gen.generate([cond])).toBe('{isVisible && <p>Hello</p>}');
+  });
+
+  it('renders conditional wrapping a loop without double braces', () => {
+    const gen = new AstroGenerator();
+    const loop: import('../../src/core/types.js').LoopNode = {
+      type: 'loop', variable: 'item', iterable: 'items',
+      body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'item' }], children: [] },
+    };
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'hasItems', body: loop,
+    };
+    expect(gen.generate([cond])).toBe('{hasItems && items.map((item) => <li>{item}</li>)}');
+  });
+
+  it('renders nested conditionals', () => {
+    const gen = new AstroGenerator();
+    const inner: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'b',
+      body: { type: 'element', tag: 'span', id: null, classes: [], attributes: {}, text: lit('ok'), children: [] },
+    };
+    const outer: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'a', body: inner,
+    };
+    expect(gen.generate([outer])).toBe('{a && (b && <span>ok</span>)}');
+  });
 });

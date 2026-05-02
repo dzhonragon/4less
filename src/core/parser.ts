@@ -1,4 +1,4 @@
-import type { Token, ElementNode, LoopNode, AstNode, TextSegment } from './types.js';
+import type { Token, ElementNode, LoopNode, CondNode, AstNode, TextSegment } from './types.js';
 import { ParseError } from '../errors.js';
 
 class Parser {
@@ -50,9 +50,16 @@ class Parser {
           },
         ]);
       }
-      nodes.push(tok.value === 'for' ? this.parseLoop() : this.parseElement());
+      nodes.push(this.parseAnyNode());
     }
     return nodes;
+  }
+
+  private parseAnyNode(): AstNode {
+    const tok = this.peek();
+    if (tok.value === 'for') return this.parseLoop();
+    if (tok.value === 'if') return this.parseCond();
+    return this.parseElement();
   }
 
   private parseLoop(): LoopNode {
@@ -72,6 +79,14 @@ class Parser {
     this.consume('COLON');
     const body = this.parseElement();
     return { type: 'loop', variable, iterable, body };
+  }
+
+  private parseCond(): CondNode {
+    this.consume('ID'); // 'if'
+    const condition = this.consume('ID').value!;
+    this.consume('COLON');
+    const body = this.parseAnyNode();
+    return { type: 'cond', condition, body };
   }
 
   private parseElement(): ElementNode {
@@ -116,7 +131,7 @@ class Parser {
       attributes[key] = this.consume('STRING').value!;
     }
 
-    let children: AstNode[] = [];
+    const children: AstNode[] = [];
     if (this.peek().type === 'LBRACE') {
       this.consume('LBRACE');
       while (this.peek().type !== 'RBRACE') {
@@ -130,10 +145,7 @@ class Parser {
             },
           ]);
         }
-        const tok = this.peek();
-        children.push(tok.type === 'ID' && tok.value === 'for'
-          ? this.parseLoop()
-          : this.parseElement());
+        children.push(this.parseAnyNode());
       }
       this.consume('RBRACE');
     }

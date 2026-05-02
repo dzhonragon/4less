@@ -176,6 +176,42 @@ describe('loops', () => {
   });
 });
 
+describe('conditionals', () => {
+  it('renders nothing when condition is false', () => {
+    expect(compile('div { if show: p "Hi" }', { show: false })).toBe('<div></div>');
+  });
+
+  it('renders body when condition is true', () => {
+    expect(compile('div { if show: p "Hi" }', { show: true })).toBe('<div><p>Hi</p></div>');
+  });
+
+  it('renders nothing when condition variable is not provided', () => {
+    expect(compile('if show: p "Hi"')).toBe('');
+  });
+
+  it('renders body when condition is truthy string', () => {
+    expect(compile('if title: h1 $title', { title: 'Hello' })).toBe('<h1>Hello</h1>');
+  });
+
+  it('renders nothing when condition is empty string', () => {
+    expect(compile('if title: h1 "Hi"', { title: '' })).toBe('');
+  });
+
+  it('conditional wrapping a loop', () => {
+    expect(compile('if hasItems: for item in items: li $item', { hasItems: true, items: ['a', 'b'] })).toBe(
+      '<li>a</li><li>b</li>'
+    );
+  });
+
+  it('conditional wrapping a loop renders nothing when condition false', () => {
+    expect(compile('if hasItems: for item in items: li $item', { hasItems: false, items: ['a', 'b'] })).toBe('');
+  });
+
+  it('multiple siblings with conditions', () => {
+    expect(compile('div { if a: p "A" if b: p "B" }', { a: true, b: false })).toBe('<div><p>A</p></div>');
+  });
+});
+
 describe('error handling', () => {
   it('reports unexpected closing brace', () => {
     expect(() => compile('{ orphan }')).toThrow(ParseError);

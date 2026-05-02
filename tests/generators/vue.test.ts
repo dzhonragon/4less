@@ -81,4 +81,33 @@ describe('VueGenerator', () => {
     const ul = el('ul', { children: [loop] });
     expect(gen.generate([ul])).toBe('<ul><li v-for="x in list">{{ x }}</li></ul>');
   });
+
+  it('renders conditional as v-if on element', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'isVisible',
+      body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Hello'), children: [] },
+    };
+    expect(gen.generate([cond])).toBe('<p v-if="isVisible">Hello</p>');
+  });
+
+  it('renders conditional wrapping a loop in template tag', () => {
+    const loop: import('../../src/core/types.js').LoopNode = {
+      type: 'loop', variable: 'item', iterable: 'items',
+      body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'item' }], children: [] },
+    };
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'hasItems', body: loop,
+    };
+    expect(gen.generate([cond])).toBe(
+      '<template v-if="hasItems"><li v-for="item in items">{{ item }}</li></template>'
+    );
+  });
+
+  it('renders conditional with existing element attributes', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'show',
+      body: { type: 'element', tag: 'div', id: 'app', classes: ['box'], attributes: {}, text: null, children: [] },
+    };
+    expect(gen.generate([cond])).toBe('<div id="app" class="box" v-if="show"></div>');
+  });
 });

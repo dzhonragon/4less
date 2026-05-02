@@ -1,5 +1,5 @@
 import { BaseGenerator } from './base.js';
-import type { AstNode, ElementNode, LoopNode, TextSegment } from '../core/types.js';
+import type { AstNode, CondNode, ElementNode, LoopNode, TextSegment } from '../core/types.js';
 
 const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -12,7 +12,9 @@ export class VueGenerator extends BaseGenerator {
   }
 
   private renderNode(node: AstNode): string {
-    return node.type === 'loop' ? this.renderLoop(node) : this.renderElement(node);
+    if (node.type === 'loop') return this.renderLoop(node);
+    if (node.type === 'cond') return this.renderCond(node);
+    return this.renderElement(node);
   }
 
   private renderLoop(node: LoopNode): string {
@@ -21,6 +23,22 @@ export class VueGenerator extends BaseGenerator {
     const attrsStr = attrs ? ` ${attrs} ${vFor}` : ` ${vFor}`;
     const content = this.renderBodyContent(node.body);
     return `<${node.body.tag}${attrsStr}>${content}</${node.body.tag}>`;
+  }
+
+  private renderCond(node: CondNode): string {
+    // When the body is a plain element, add v-if directly to it
+    if (node.body.type === 'element') {
+      const el = node.body;
+      const attrs = this.buildAttrs(el);
+      const vIf = `v-if="${node.condition}"`;
+      const attrsStr = attrs ? ` ${attrs} ${vIf}` : ` ${vIf}`;
+      const isVoid = VOID_ELEMENTS.has(el.tag);
+      const content = this.renderBodyContent(el);
+      if (!content && isVoid) return `<${el.tag}${attrsStr}/>`;
+      return `<${el.tag}${attrsStr}>${content}</${el.tag}>`;
+    }
+    // For loop/cond body: wrap in <template v-if>
+    return `<template v-if="${node.condition}">${this.renderNode(node.body)}</template>`;
   }
 
   private renderBodyContent(node: ElementNode): string {

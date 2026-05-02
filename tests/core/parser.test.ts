@@ -155,4 +155,40 @@ describe('buildAst', () => {
     const tokens = tokenize('for item items: li $item');
     expect(() => buildAst(tokens)).toThrow(ParseError);
   });
+
+  it('parses an if conditional', () => {
+    const tokens = tokenize('if isVisible: p "Hello"');
+    const ast = buildAst(tokens);
+    expect(ast).toHaveLength(1);
+    expect(ast[0]).toMatchObject({ type: 'cond', condition: 'isVisible' });
+  });
+
+  it('cond body is an ElementNode', () => {
+    const tokens = tokenize('if isVisible: p "Hello"');
+    const ast = buildAst(tokens);
+    const cond = ast[0] as import('../../src/core/types.js').CondNode;
+    expect(cond.body).toMatchObject({ type: 'element', tag: 'p' });
+  });
+
+  it('parses conditional nested inside a parent', () => {
+    const tokens = tokenize('div { if show: span "visible" }');
+    const ast = buildAst(tokens);
+    const div = ast[0] as import('../../src/core/types.js').ElementNode;
+    expect(div.children[0]).toMatchObject({ type: 'cond', condition: 'show' });
+  });
+
+  it('parses conditional wrapping a loop', () => {
+    const tokens = tokenize('if hasItems: for item in items: li $item');
+    const ast = buildAst(tokens);
+    const cond = ast[0] as import('../../src/core/types.js').CondNode;
+    expect(cond.body).toMatchObject({ type: 'loop', variable: 'item' });
+  });
+
+  it('parses nested conditionals', () => {
+    const tokens = tokenize('if a: if b: div "deep"');
+    const ast = buildAst(tokens);
+    const outer = ast[0] as import('../../src/core/types.js').CondNode;
+    expect(outer.condition).toBe('a');
+    expect(outer.body).toMatchObject({ type: 'cond', condition: 'b' });
+  });
 });

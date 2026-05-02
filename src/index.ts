@@ -14,7 +14,7 @@ export { ReactGenerator } from './generators/react.js';
 export { VueGenerator } from './generators/vue.js';
 export { AstroGenerator } from './generators/astro.js';
 export type { AstroGeneratorOptions } from './generators/astro.js';
-export type { Token, ElementNode, LoopNode, AstNode, TextSegment, VarValue, VarsMap } from './core/types.js';
+export type { Token, ElementNode, LoopNode, CondNode, AstNode, TextSegment, VarValue, VarsMap } from './core/types.js';
 
 export function parse(input: string): AstNode[] {
   return buildAst(tokenize(input));

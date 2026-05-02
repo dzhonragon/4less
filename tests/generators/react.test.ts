@@ -107,4 +107,27 @@ describe('ReactGenerator', () => {
       `React.createElement('ul', null, list.map((x) => React.createElement('span', null, x)))`
     );
   });
+
+  it('renders conditional as ternary expression', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'isVisible',
+      body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Hello'), children: [] },
+    };
+    expect(gen.generate([cond])).toBe(
+      `isVisible ? React.createElement('p', null, "Hello") : null`
+    );
+  });
+
+  it('renders conditional wrapping a loop', () => {
+    const loop: import('../../src/core/types.js').LoopNode = {
+      type: 'loop', variable: 'item', iterable: 'items',
+      body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'item' }], children: [] },
+    };
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', condition: 'hasItems', body: loop,
+    };
+    expect(gen.generate([cond])).toBe(
+      `hasItems ? items.map((item) => React.createElement('li', null, item)) : null`
+    );
+  });
 });
