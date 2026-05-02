@@ -17,6 +17,10 @@
     "./webpack": {
       "import": "./dist/plugins/webpack.js",
       "types": "./dist/plugins/webpack.d.ts"
+    },
+    "./esbuild": {
+      "import": "./dist/plugins/esbuild.js",
+      "types": "./dist/plugins/esbuild.d.ts"
     }
   },
   "files": [
