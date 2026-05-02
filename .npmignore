@@ -1,0 +1,10 @@
+src/
+tests/
+.github/
+tsconfig.json
+*.test.ts
+*.md
+VITE_PLUGIN.md
+CHANGELOG.md
+.gitignore
+vitest.config.ts

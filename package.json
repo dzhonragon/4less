@@ -41,6 +41,14 @@
   ],
   "author": "dzhonragon",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dzhonragon/4less.git"
+  },
+  "homepage": "https://github.com/dzhonragon/4less",
+  "bugs": {
+    "url": "https://github.com/dzhonragon/4less/issues"
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",

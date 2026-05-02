@@ -163,12 +163,60 @@ HTML → React prop name mappings are handled automatically (`class` → `classN
 
 ---
 
+### `VueGenerator`
+
+Produces Vue 3 template-compatible HTML. Valid inside `<template>` blocks. Supports `v-for` and `v-if` directives.
+
+```ts
+import { parse, generate, VueGenerator } from '4less';
+
+const ast = parse('div.box { p $title }');
+generate(ast, new VueGenerator());
+// <div class="box"><p>{{ title }}</p></div>
+
+// Loops and conditionals use Vue directives
+generate(parse('for item in items: li $item'), new VueGenerator());
+// <li v-for="item in items">{{ item }}</li>
+
+generate(parse('if show: p "Hi"'), new VueGenerator());
+// <p v-if="show">Hi</p>
+```
+
+---
+
+### `AstroGenerator`
+
+Produces Astro component syntax with optional frontmatter and JSX expressions.
+
+```ts
+import { parse, generate, AstroGenerator } from '4less';
+
+const gen = new AstroGenerator({ frontmatter: 'const title = "Page";' });
+const ast = parse('h1 $title');
+generate(ast, gen);
+// ---
+// const title = "Page";
+// ---
+// <h1>{title}</h1>
+
+// Loops use .map() and conditionals use &&
+generate(parse('for item in items: li $item'), new AstroGenerator());
+// {items.map((item) => <li>{item}</li>)}
+
+generate(parse('if show: div "visible"'), new AstroGenerator());
+// {show && <div>visible</div>}
+```
+
+---
+
 ## Syntax
+
+### Basic Elements
 
 ```
 tag                          <tag></tag>
 tag "text"                   <tag>text</tag>
-tag attr:"value"             <tag attr="value"/>  (void) | <tag attr="value"></tag>
+tag attr:"value"             <tag attr="value"/>
 tag "text" attr:"value"      <tag attr="value">text</tag>
 tag.class                    <tag class="class"></tag>
 tag#id                       <tag id="id"></tag>
@@ -176,7 +224,54 @@ tag#id.foo.bar               <tag id="id" class="foo bar"></tag>
 tag { child }                <tag><child/></tag>
 ```
 
-Order within an element: `tag shorthands? text? attributes? { children }?`
+### Variables
+
+Reference values from a `vars` map:
+
+```ts
+compile('p $name', { name: 'Alice' });
+// <p>Alice</p>
+
+compile('p "Hello " $name', { name: 'Bob' });
+// <p>Hello Bob</p>
+```
+
+### Loops
+
+Iterate over arrays:
+
+```ts
+compile('ul { for item in items: li $item }', { items: ['a', 'b', 'c'] });
+// <ul><li>a</li><li>b</li><li>c</li></ul>
+
+// Each generator emits native idiom:
+// React:  items.map((item) => React.createElement('li', null, item))
+// Vue:    <li v-for="item in items">{{ item }}</li>
+// Astro:  {items.map((item) => <li>{item}</li>)}
+```
+
+### Conditionals
+
+Show/hide based on truthiness:
+
+```ts
+compile('if show: p "visible"', { show: true });
+// <p>visible</p>
+
+compile('if show: p "visible"', { show: false });
+// (empty string)
+
+// Each generator emits native idiom:
+// React:  show ? React.createElement('p', null, "visible") : null
+// Vue:    <p v-if="show">visible</p>
+// Astro:  {show && <p>visible</p>}
+```
+
+### Order & Precedence
+
+Within an element: `tag shorthands? text? attributes? { children }?`
+
+When rendering: **children** > **text** > **self-closing**
 
 ---
 
@@ -306,7 +401,7 @@ Input string
 npm test
 ```
 
-64 tests covering lexer, parser, all three generators, and the full pipeline.
+173 tests covering lexer, parser, all generators (HTML, JSON, React, Vue, Astro), loops, conditionals, variables, and the full pipeline.
 
 ---
 
