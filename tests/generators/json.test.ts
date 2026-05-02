@@ -17,8 +17,8 @@ describe('JsonGenerator', () => {
 
   it('serializes multiple elements as array', () => {
     const ast: ElementNode[] = [
-      { type: 'element', tag: 'h1', id: null, classes: [], attributes: {}, text: 'Title', children: [] },
-      { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: 'Content', children: [] },
+      { type: 'element', tag: 'h1', id: null, classes: [], attributes: {}, text: [{ kind: 'literal', value: 'Title' }], children: [] },
+      { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: [{ kind: 'literal', value: 'Content' }], children: [] },
     ];
     const gen = new JsonGenerator();
     const json = gen.generate(ast);
@@ -36,5 +36,18 @@ describe('JsonGenerator', () => {
     expect(json).toContain(`"type": "element"`);
     const lines = json.split('\n');
     expect(lines.length).toBeGreaterThan(1);
+  });
+
+  it('serializes TextSegment array in text field', () => {
+    const ast: ElementNode[] = [
+      {
+        type: 'element', tag: 'p', id: null, classes: [], attributes: {},
+        text: [{ kind: 'var', name: 'title' }],
+        children: [],
+      },
+    ];
+    const gen = new JsonGenerator();
+    const parsed = JSON.parse(gen.generate(ast));
+    expect(parsed[0].text[0]).toEqual({ kind: 'var', name: 'title' });
   });
 });

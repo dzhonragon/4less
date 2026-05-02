@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { VueGenerator } from '../../src/generators/vue.js';
-import type { ElementNode } from '../../src/core/types.js';
+import type { ElementNode, TextSegment } from '../../src/core/types.js';
+
+const lit = (value: string): TextSegment[] => [{ kind: 'literal', value }];
 
 const el = (tag: string, overrides: Partial<ElementNode> = {}): ElementNode => ({
   type: 'element', tag, id: null, classes: [], attributes: {}, text: null, children: [],
@@ -19,7 +21,7 @@ describe('VueGenerator', () => {
   });
 
   it('renders text content', () => {
-    expect(gen.generate([el('h1', { text: 'Hello' })])).toBe('<h1>Hello</h1>');
+    expect(gen.generate([el('h1', { text: lit('Hello') })])).toBe('<h1>Hello</h1>');
   });
 
   it('renders id and class attributes', () => {
@@ -29,27 +31,37 @@ describe('VueGenerator', () => {
   });
 
   it('renders nested children', () => {
-    const ast = [el('div', { children: [el('p', { text: 'World' })] })];
+    const ast = [el('div', { children: [el('p', { text: lit('World') })] })];
     expect(gen.generate(ast)).toBe('<div><p>World</p></div>');
   });
 
   it('renders multiple root elements (for v-html or slot wrapping)', () => {
-    const ast = [el('h1', { text: 'A' }), el('p', { text: 'B' })];
+    const ast = [el('h1', { text: lit('A') }), el('p', { text: lit('B') })];
     expect(gen.generate(ast)).toBe('<h1>A</h1><p>B</p>');
   });
 
   it('escapes HTML in text content', () => {
-    expect(gen.generate([el('p', { text: '<script>xss</script>' })])).toBe(
+    expect(gen.generate([el('p', { text: lit('<script>xss</script>') })])).toBe(
       '<p>&lt;script&gt;xss&lt;/script&gt;</p>'
     );
   });
 
   it('output is valid as Vue SFC template content', () => {
-    const ast = [el('div', { id: 'app', children: [el('h1', { text: 'Hello' })] })];
+    const ast = [el('div', { id: 'app', children: [el('h1', { text: lit('Hello') })] })];
     const template = `<template>\n${gen.generate(ast)}\n</template>`;
     expect(template).toContain('<template>');
     expect(template).toContain('<div id="app">');
     expect(template).toContain('<h1>Hello</h1>');
     expect(template).toContain('</template>');
+  });
+
+  it('renders variable as Vue interpolation {{ varName }}', () => {
+    const ast = [el('p', { text: [{ kind: 'var', name: 'title' }] })];
+    expect(gen.generate(ast)).toBe('<p>{{ title }}</p>');
+  });
+
+  it('renders mixed literal and variable', () => {
+    const ast = [el('p', { text: [{ kind: 'literal', value: 'Hello ' }, { kind: 'var', name: 'name' }] })];
+    expect(gen.generate(ast)).toBe('<p>Hello {{ name }}</p>');
   });
 });

@@ -1,4 +1,4 @@
-import type { Token, ElementNode } from './types.js';
+import type { Token, ElementNode, TextSegment } from './types.js';
 import { ParseError } from '../errors.js';
 
 class Parser {
@@ -72,9 +72,19 @@ class Parser {
       }
     }
 
-    let text: string | null = null;
-    if (this.peek().type === 'STRING') {
-      text = this.consume('STRING').value!;
+    let text: TextSegment[] | null = null;
+    if (this.peek().type === 'STRING' || this.peek().type === 'VAR') {
+      text = [];
+      while (this.peek().type === 'STRING' || this.peek().type === 'VAR') {
+        const tok = this.peek();
+        if (tok.type === 'STRING') {
+          this.consume('STRING');
+          text.push({ kind: 'literal', value: tok.value! });
+        } else {
+          this.consume('VAR');
+          text.push({ kind: 'var', name: tok.value! });
+        }
+      }
     }
 
     const attributes: Record<string, string> = {};

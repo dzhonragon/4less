@@ -8,6 +8,7 @@ interface TokenPattern {
 
 const TOKEN_PATTERNS: TokenPattern[] = [
   { type: 'STRING', re: /^"([^"\r\n]*)"/ },
+  { type: 'VAR', re: /^\$([a-zA-Z_][a-zA-Z0-9_]*)/ },
   { type: 'DOT', re: /^\./ },
   { type: 'HASH', re: /^#/ },
   { type: 'COLON', re: /^:/ },
@@ -41,7 +42,7 @@ export function tokenize(input: string): Token[] {
           pos++;
         }
       } else {
-        const value = type === 'STRING' ? m[1] : m[0];
+        const value = (type === 'STRING' || type === 'VAR') ? m[1] : m[0];
         tokens.push({ type, value, line, col });
         pos += m[0].length;
       }

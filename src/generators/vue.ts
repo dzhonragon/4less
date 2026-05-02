@@ -1,5 +1,5 @@
 import { BaseGenerator } from './base.js';
-import type { ElementNode } from '../core/types.js';
+import type { ElementNode, TextSegment } from '../core/types.js';
 
 const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -41,12 +41,18 @@ export class VueGenerator extends BaseGenerator {
     }
 
     if (node.text !== null) {
-      return `<${node.tag}${attrsStr}>${this.escapeHtml(node.text)}</${node.tag}>`;
+      return `<${node.tag}${attrsStr}>${this.renderText(node.text)}</${node.tag}>`;
     }
 
     return isVoid
       ? `<${node.tag}${attrsStr}/>`
       : `<${node.tag}${attrsStr}></${node.tag}>`;
+  }
+
+  private renderText(segments: TextSegment[]): string {
+    return segments.map(seg =>
+      seg.kind === 'literal' ? this.escapeHtml(seg.value) : `{{ ${seg.name} }}`
+    ).join('');
   }
 
   private buildAttrs(node: ElementNode): string {

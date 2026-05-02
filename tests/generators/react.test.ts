@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { ReactGenerator } from '../../src/generators/react.js';
-import type { ElementNode } from '../../src/core/types.js';
+import type { ElementNode, TextSegment } from '../../src/core/types.js';
+
+const lit = (value: string): TextSegment[] => [{ kind: 'literal', value }];
 
 const el = (tag: string, overrides: Partial<ElementNode> = {}): ElementNode => ({
   type: 'element',
@@ -23,7 +25,7 @@ describe('ReactGenerator', () => {
   });
 
   it('renders element with text', () => {
-    expect(gen.generate([el('h1', { text: 'Hello' })])).toBe(
+    expect(gen.generate([el('h1', { text: lit('Hello') })])).toBe(
       `React.createElement('h1', null, "Hello")`
     );
   });
@@ -41,7 +43,7 @@ describe('ReactGenerator', () => {
   });
 
   it('renders attributes', () => {
-    expect(gen.generate([el('a', { attributes: { href: '/' }, text: 'Home' })])).toBe(
+    expect(gen.generate([el('a', { attributes: { href: '/' }, text: lit('Home') })])).toBe(
       `React.createElement('a', { href: "/" }, "Home")`
     );
   });
@@ -54,7 +56,7 @@ describe('ReactGenerator', () => {
 
   it('renders nested children', () => {
     const ast: ElementNode[] = [
-      el('div', { children: [el('p', { text: 'Hello' })] }),
+      el('div', { children: [el('p', { text: lit('Hello') })] }),
     ];
     expect(gen.generate(ast)).toBe(
       `React.createElement('div', null, React.createElement('p', null, "Hello"))`
@@ -62,7 +64,7 @@ describe('ReactGenerator', () => {
   });
 
   it('wraps multiple root nodes in Fragment', () => {
-    const ast = [el('h1', { text: 'Title' }), el('p', { text: 'Body' })];
+    const ast = [el('h1', { text: lit('Title') }), el('p', { text: lit('Body') })];
     expect(gen.generate(ast)).toBe(
       `React.createElement(React.Fragment, null, React.createElement('h1', null, "Title"), React.createElement('p', null, "Body"))`
     );
@@ -73,5 +75,15 @@ describe('ReactGenerator', () => {
     expect(gen.generate(ast)).toBe(
       `React.createElement('div', { id: "app", className: "box", role: "main" })`
     );
+  });
+
+  it('renders variable as bare JS identifier', () => {
+    const ast = [el('p', { text: [{ kind: 'var', name: 'title' }] })];
+    expect(gen.generate(ast)).toBe(`React.createElement('p', null, title)`);
+  });
+
+  it('renders mixed literal and variable', () => {
+    const ast = [el('p', { text: [{ kind: 'literal', value: 'Hello ' }, { kind: 'var', name: 'name' }] })];
+    expect(gen.generate(ast)).toBe(`React.createElement('p', null, "Hello ", name)`);
   });
 });

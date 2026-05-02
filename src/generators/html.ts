@@ -1,5 +1,5 @@
 import { BaseGenerator } from './base.js';
-import type { ElementNode } from '../core/types.js';
+import type { ElementNode, TextSegment } from '../core/types.js';
 
 const VOID_ELEMENTS = new Set([
   'area',
@@ -18,7 +18,19 @@ const VOID_ELEMENTS = new Set([
   'wbr',
 ]);
 
+export interface HtmlGeneratorOptions {
+  /** Variable values to substitute in the output. Unresolved vars render as {{varName}}. */
+  vars?: Record<string, string>;
+}
+
 export class HtmlGenerator extends BaseGenerator {
+  private vars: Record<string, string>;
+
+  constructor(options: HtmlGeneratorOptions = {}) {
+    super();
+    this.vars = options.vars ?? {};
+  }
+
   generate(nodes: ElementNode[]): string {
     return nodes.map(n => this.renderElement(n)).join('');
   }
@@ -34,8 +46,8 @@ export class HtmlGenerator extends BaseGenerator {
     }
 
     if (node.text !== null) {
-      const escaped = this.escapeHtml(node.text);
-      return `<${node.tag}${attrsStr}>${escaped}</${node.tag}>`;
+      const content = this.renderText(node.text);
+      return `<${node.tag}${attrsStr}>${content}</${node.tag}>`;
     }
 
     if (isVoid) {
@@ -43,6 +55,14 @@ export class HtmlGenerator extends BaseGenerator {
     }
 
     return `<${node.tag}${attrsStr}></${node.tag}>`;
+  }
+
+  private renderText(segments: TextSegment[]): string {
+    return segments.map(seg => {
+      if (seg.kind === 'literal') return this.escapeHtml(seg.value);
+      const val = this.vars[seg.name];
+      return val !== undefined ? this.escapeHtml(val) : `{{${seg.name}}}`;
+    }).join('');
   }
 
   private buildAttrs(node: ElementNode): string {

@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { AstroGenerator } from '../../src/generators/astro.js';
-import type { ElementNode } from '../../src/core/types.js';
+import type { ElementNode, TextSegment } from '../../src/core/types.js';
+
+const lit = (value: string): TextSegment[] => [{ kind: 'literal', value }];
 
 const el = (tag: string, overrides: Partial<ElementNode> = {}): ElementNode => ({
   type: 'element', tag, id: null, classes: [], attributes: {}, text: null, children: [],
@@ -10,24 +12,24 @@ const el = (tag: string, overrides: Partial<ElementNode> = {}): ElementNode => (
 describe('AstroGenerator', () => {
   it('renders single element template', () => {
     const gen = new AstroGenerator();
-    expect(gen.generate([el('div', { text: 'Hello' })])).toBe('<div>Hello</div>');
+    expect(gen.generate([el('div', { text: lit('Hello') })])).toBe('<div>Hello</div>');
   });
 
   it('wraps multiple root elements in fragment', () => {
     const gen = new AstroGenerator();
-    const ast = [el('h1', { text: 'A' }), el('p', { text: 'B' })];
+    const ast = [el('h1', { text: lit('A') }), el('p', { text: lit('B') })];
     expect(gen.generate(ast)).toBe('<><h1>A</h1><p>B</p></>');
   });
 
   it('does not wrap in fragment when disabled', () => {
     const gen = new AstroGenerator({ fragment: false });
-    const ast = [el('h1', { text: 'A' }), el('p', { text: 'B' })];
+    const ast = [el('h1', { text: lit('A') }), el('p', { text: lit('B') })];
     expect(gen.generate(ast)).toBe('<h1>A</h1><p>B</p>');
   });
 
   it('includes frontmatter when provided', () => {
     const gen = new AstroGenerator({ frontmatter: 'const title = "Hello";' });
-    const result = gen.generate([el('h1', { text: 'Hi' })]);
+    const result = gen.generate([el('h1', { text: lit('Hi') })]);
     expect(result).toBe('---\nconst title = "Hello";\n---\n<h1>Hi</h1>');
   });
 
@@ -51,7 +53,7 @@ describe('AstroGenerator', () => {
 
   it('renders nested children', () => {
     const gen = new AstroGenerator();
-    const ast = [el('div', { children: [el('p', { text: 'Hello' })] })];
+    const ast = [el('div', { children: [el('p', { text: lit('Hello') })] })];
     expect(gen.generate(ast)).toBe('<div><p>Hello</p></div>');
   });
 
@@ -59,11 +61,23 @@ describe('AstroGenerator', () => {
     const gen = new AstroGenerator({
       frontmatter: "import Button from './Button.astro';",
     });
-    const ast = [el('div', { id: 'app', children: [el('h1', { text: 'Hello' })] })];
+    const ast = [el('div', { id: 'app', children: [el('h1', { text: lit('Hello') })] })];
     const result = gen.generate(ast);
     expect(result).toContain('---');
     expect(result).toContain("import Button");
     expect(result).toContain('<div id="app">');
     expect(result).toContain('<h1>Hello</h1>');
+  });
+
+  it('renders variable as JSX expression {varName}', () => {
+    const gen = new AstroGenerator();
+    const ast = [el('h1', { text: [{ kind: 'var', name: 'title' }] })];
+    expect(gen.generate(ast)).toBe('<h1>{title}</h1>');
+  });
+
+  it('renders mixed literal and variable', () => {
+    const gen = new AstroGenerator();
+    const ast = [el('p', { text: [{ kind: 'literal', value: 'Hello ' }, { kind: 'var', name: 'name' }] })];
+    expect(gen.generate(ast)).toBe('<p>Hello {name}</p>');
   });
 });

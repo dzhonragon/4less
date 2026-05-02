@@ -109,6 +109,37 @@ describe('complex structures', () => {
   });
 });
 
+describe('variables', () => {
+  it('renders unresolved variable as {{varName}} placeholder', () => {
+    expect(compile('p $title')).toBe('<p>{{title}}</p>');
+  });
+
+  it('substitutes variable when vars provided', () => {
+    expect(compile('h1 $title', { title: 'Hello World' })).toBe('<h1>Hello World</h1>');
+  });
+
+  it('substitutes multiple variables', () => {
+    expect(compile('p $first " " $last', { first: 'John', last: 'Doe' })).toBe('<p>John Doe</p>');
+  });
+
+  it('renders mixed literal and variable', () => {
+    expect(compile('p "Hello " $name', { name: 'World' })).toBe('<p>Hello World</p>');
+  });
+
+  it('escapes substituted variable values', () => {
+    expect(compile('p $content', { content: '<b>bold</b>' })).toBe('<p>&lt;b&gt;bold&lt;/b&gt;</p>');
+  });
+
+  it('renders placeholder for missing variable even with other vars provided', () => {
+    expect(compile('p $missing', { other: 'value' })).toBe('<p>{{missing}}</p>');
+  });
+
+  it('works with nested elements', () => {
+    expect(compile('div { h1 $title p $body }', { title: 'Hi', body: 'Content' }))
+      .toBe('<div><h1>Hi</h1><p>Content</p></div>');
+  });
+});
+
 describe('error handling', () => {
   it('reports unexpected closing brace', () => {
     expect(() => compile('{ orphan }')).toThrow(ParseError);

@@ -1,5 +1,5 @@
 import { BaseGenerator } from './base.js';
-import type { ElementNode } from '../core/types.js';
+import type { ElementNode, TextSegment } from '../core/types.js';
 
 // HTML attributes that must be renamed for React
 const REACT_PROP_MAP: Record<string, string> = {
@@ -41,10 +41,17 @@ export class ReactGenerator extends BaseGenerator {
     }
 
     if (node.text !== null) {
-      return `React.createElement('${node.tag}'${propsArg}, ${JSON.stringify(node.text)})`;
+      const textArgs = this.renderTextArgs(node.text).join(', ');
+      return `React.createElement('${node.tag}'${propsArg}, ${textArgs})`;
     }
 
     return `React.createElement('${node.tag}'${propsArg})`;
+  }
+
+  private renderTextArgs(segments: TextSegment[]): string[] {
+    return segments.map(seg =>
+      seg.kind === 'literal' ? JSON.stringify(seg.value) : seg.name
+    );
   }
 
   private buildProps(node: ElementNode): string {

@@ -25,7 +25,7 @@ describe('buildAst', () => {
     const ast = buildAst(tokens);
     expect(ast[0]).toMatchObject({
       tag: 'div',
-      text: 'hello',
+      text: [{ kind: 'literal', value: 'hello' }],
     });
   });
 
@@ -61,7 +61,7 @@ describe('buildAst', () => {
     const ast = buildAst(tokens);
     expect(ast[0]).toMatchObject({
       tag: 'div',
-      children: [{ tag: 'p', text: 'text' }],
+      children: [{ tag: 'p', text: [{ kind: 'literal', value: 'text' }] }],
     });
   });
 
@@ -93,5 +93,33 @@ describe('buildAst', () => {
     const tokens = tokenize('div "ignored" { p "shown" }');
     const ast = buildAst(tokens);
     expect(ast[0].children).toHaveLength(1);
+  });
+
+  it('parses single variable reference', () => {
+    const tokens = tokenize('p $title');
+    const ast = buildAst(tokens);
+    expect(ast[0]).toMatchObject({
+      tag: 'p',
+      text: [{ kind: 'var', name: 'title' }],
+    });
+  });
+
+  it('parses mixed literal and variable', () => {
+    const tokens = tokenize('p "Hello " $name');
+    const ast = buildAst(tokens);
+    expect(ast[0].text).toEqual([
+      { kind: 'literal', value: 'Hello ' },
+      { kind: 'var', name: 'name' },
+    ]);
+  });
+
+  it('parses multiple variables in sequence', () => {
+    const tokens = tokenize('p $first " " $last');
+    const ast = buildAst(tokens);
+    expect(ast[0].text).toEqual([
+      { kind: 'var', name: 'first' },
+      { kind: 'literal', value: ' ' },
+      { kind: 'var', name: 'last' },
+    ]);
   });
 });

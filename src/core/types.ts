@@ -1,6 +1,7 @@
 export type TokenType =
   | 'ID'
   | 'STRING'
+  | 'VAR'
   | 'DOT'
   | 'HASH'
   | 'COLON'
@@ -15,12 +16,16 @@ export interface Token {
   col: number;
 }
 
+export type TextSegment =
+  | { kind: 'literal'; value: string }
+  | { kind: 'var'; name: string };
+
 export interface ElementNode {
   type: 'element';
   tag: string;
   id: string | null;
   classes: string[];
   attributes: Record<string, string>;
-  text: string | null;
+  text: TextSegment[] | null;
   children: ElementNode[];
 }

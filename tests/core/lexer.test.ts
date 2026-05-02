@@ -63,4 +63,27 @@ describe('tokenize', () => {
     const tokens = tokenize('"hello <world> & friends"');
     expect(tokens[0]).toMatchObject({ type: 'STRING', value: 'hello <world> & friends' });
   });
+
+  it('recognizes VAR tokens', () => {
+    const tokens = tokenize('$title');
+    expect(tokens).toHaveLength(2);
+    expect(tokens[0]).toMatchObject({ type: 'VAR', value: 'title' });
+  });
+
+  it('VAR value excludes the dollar sign', () => {
+    const tokens = tokenize('$myVar');
+    expect(tokens[0].value).toBe('myVar');
+  });
+
+  it('recognizes VAR after string literal', () => {
+    const tokens = tokenize('"Hello " $name');
+    expect(tokens[0]).toMatchObject({ type: 'STRING', value: 'Hello ' });
+    expect(tokens[1]).toMatchObject({ type: 'VAR', value: 'name' });
+  });
+
+  it('recognizes multiple VARs', () => {
+    const tokens = tokenize('$first $last');
+    expect(tokens[0]).toMatchObject({ type: 'VAR', value: 'first' });
+    expect(tokens[1]).toMatchObject({ type: 'VAR', value: 'last' });
+  });
 });
