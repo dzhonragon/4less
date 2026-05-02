@@ -25,7 +25,7 @@ A minimal compiler with zero runtime dependencies. Lexer and parser are handwrit
 ## Install
 
 ```bash
-npm install @dzhonragon/4less
+npm install l3ssy
 ```
 
 Node 20+ required. No build step needed for the runtime.
