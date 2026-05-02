@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { tokenize } from '../src/lexer.js';
-import { ParseError } from '../src/errors.js';
+import { tokenize } from '../../src/core/lexer.js';
+import { ParseError } from '../../src/errors.js';
 
 describe('tokenize', () => {
   it('recognizes ID tokens', () => {

@@ -1,5 +1,5 @@
 import type { Token, TokenType } from './types.js';
-import { ParseError } from './errors.js';
+import { ParseError } from '../errors.js';
 
 interface TokenPattern {
   type: TokenType | 'WS';

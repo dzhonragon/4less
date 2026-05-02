@@ -1,5 +1,5 @@
-import { BaseGenerator } from '../generator.js';
-import type { ElementNode } from '../types.js';
+import { BaseGenerator } from './base.js';
+import type { ElementNode } from '../core/types.js';
 
 const VOID_ELEMENTS = new Set([
   'area',

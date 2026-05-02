@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { tokenize } from '../src/lexer.js';
-import { buildAst } from '../src/parser.js';
-import { ParseError } from '../src/errors.js';
-import type { ElementNode } from '../src/types.js';
+import { tokenize } from '../../src/core/lexer.js';
+import { buildAst } from '../../src/core/parser.js';
+import { ParseError } from '../../src/errors.js';
+import type { ElementNode } from '../../src/core/types.js';
 
 describe('buildAst', () => {
   it('parses a simple element', () => {

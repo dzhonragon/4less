@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { HtmlGenerator } from '../../src/generators/html.js';
-import type { ElementNode } from '../../src/types.js';
+import type { ElementNode } from '../../src/core/types.js';
 
 describe('HtmlGenerator', () => {
   const gen = new HtmlGenerator();

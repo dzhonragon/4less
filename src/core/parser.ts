@@ -1,5 +1,5 @@
 import type { Token, ElementNode } from './types.js';
-import { ParseError } from './errors.js';
+import { ParseError } from '../errors.js';
 
 class Parser {
   private tokens: Token[];

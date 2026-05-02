@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { JsonGenerator } from '../../src/generators/json.js';
-import type { ElementNode } from '../../src/types.js';
+import type { ElementNode } from '../../src/core/types.js';
 
 describe('JsonGenerator', () => {
   it('serializes as valid JSON', () => {
