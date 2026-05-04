@@ -1,0 +1,14 @@
+div class:"grid grid-cols-3 gap-4 mt-8" {
+  div class:"rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4" {
+    p "Zero deps" class:"text-xs font-semibold text-indigo-400 uppercase tracking-wider"
+    p "No runtime dependencies. Lexer and parser are handwritten TypeScript." class:"mt-1 text-sm text-zinc-400"
+  }
+  div class:"rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4" {
+    p "Multi-framework" class:"text-xs font-semibold text-indigo-400 uppercase tracking-wider"
+    p "One source, five targets: HTML, React, Vue, Astro, JSON." class:"mt-1 text-sm text-zinc-400"
+  }
+  div class:"rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4" {
+    p "Minimal syntax" class:"text-xs font-semibold text-indigo-400 uppercase tracking-wider"
+    p "No closing tags. Dots for classes, hashes for IDs." class:"mt-1 text-sm text-zinc-400"
+  }
+}

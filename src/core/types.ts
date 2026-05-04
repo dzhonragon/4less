@@ -23,7 +23,21 @@ export type TextSegment =
 export type VarValue = string | string[] | boolean;
 export type VarsMap = Record<string, VarValue>;
 
-export type AstNode = ElementNode | LoopNode | CondNode;
+export type AstNode = ElementNode | LoopNode | CondNode | ComponentDefNode | ComponentCallNode;
+
+export interface ComponentDefNode {
+  type: 'component_def';
+  name: string;
+  body: AstNode[];
+}
+
+export interface ComponentCallNode {
+  type: 'component_call';
+  name: string;
+  props: Record<string, string>;
+  line: number;
+  col: number;
+}
 
 export interface LoopNode {
   type: 'loop';

@@ -14,13 +14,15 @@ export class VueGenerator extends BaseGenerator {
   private renderNode(node: AstNode): string {
     if (node.type === 'loop') return this.renderLoop(node);
     if (node.type === 'cond') return this.renderCond(node);
-    return this.renderElement(node);
+    if (node.type === 'element') return this.renderElement(node);
+    throw new Error(`component node '${node.type}' must be expanded before generation`);
   }
 
   private renderLoop(node: LoopNode): string {
     const attrs = this.buildAttrs(node.body);
     const vFor = `v-for="${node.variable} in ${node.iterable}"`;
-    const attrsStr = attrs ? ` ${attrs} ${vFor}` : ` ${vFor}`;
+    const key = `:key="${node.variable}"`;
+    const attrsStr = attrs ? ` ${attrs} ${vFor} ${key}` : ` ${vFor} ${key}`;
     const content = this.renderBodyContent(node.body);
     return `<${node.body.tag}${attrsStr}>${content}</${node.body.tag}>`;
   }

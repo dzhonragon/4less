@@ -1,0 +1,10 @@
+nav class:"w-52 shrink-0 pt-1" {
+  p "Guide" class:"text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 px-3"
+  ul class:"space-y-0.5 text-sm" {
+    li { a "Getting Started"  class:"sidebar-link block px-3 py-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors" href:"../getting-started/" }
+    li { a "Syntax Reference" class:"sidebar-link block px-3 py-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors" href:"../syntax/" }
+    li { a "API Reference"    class:"sidebar-link block px-3 py-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors" href:"../api-reference/" }
+    li { a "CLI Reference"    class:"sidebar-link block px-3 py-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors" href:"../cli/" }
+    li { a "Integrations"     class:"sidebar-link block px-3 py-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors" href:"../integrations/" }
+  }
+}

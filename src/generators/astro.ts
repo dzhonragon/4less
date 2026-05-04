@@ -41,7 +41,8 @@ export class AstroGenerator extends BaseGenerator {
   private renderNode(node: AstNode): string {
     if (node.type === 'loop') return `{${this.renderLoopExpr(node)}}`;
     if (node.type === 'cond') return `{${this.renderCondExpr(node)}}`;
-    return this.renderElement(node);
+    if (node.type === 'element') return this.renderElement(node);
+    throw new Error(`component node '${node.type}' must be expanded before generation`);
   }
 
   // Returns the raw expression for a loop — without surrounding {}
@@ -59,7 +60,8 @@ export class AstroGenerator extends BaseGenerator {
   private renderNodeExpr(node: AstNode): string {
     if (node.type === 'loop') return this.renderLoopExpr(node);
     if (node.type === 'cond') return `(${this.renderCondExpr(node)})`;
-    return this.renderElement(node);
+    if (node.type === 'element') return this.renderElement(node);
+    throw new Error(`component node '${node.type}' must be expanded before generation`);
   }
 
   private renderElement(node: ElementNode): string {

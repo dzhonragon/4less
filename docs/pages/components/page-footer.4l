@@ -1,0 +1,8 @@
+footer class:"border-t border-zinc-800 py-8 text-center text-sm text-zinc-600" {
+  p "4less is MIT licensed. Built by dzhonragon."
+  div class:"mt-2 flex justify-center gap-4" {
+    a "GitHub" class:"hover:text-zinc-400 transition-colors" href:"https://github.com/dzhonragon/4less" target:"_blank"
+    a "npm"    class:"hover:text-zinc-400 transition-colors" href:"https://www.npmjs.com/package/@dzhonragon/4less" target:"_blank"
+    a "Issues" class:"hover:text-zinc-400 transition-colors" href:"https://github.com/dzhonragon/4less/issues" target:"_blank"
+  }
+}

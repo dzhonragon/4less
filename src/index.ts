@@ -1,5 +1,6 @@
 import { tokenize } from './core/lexer.js';
 import { buildAst } from './core/parser.js';
+import { expandComponents } from './core/expand.js';
 import { HtmlGenerator } from './generators/html.js';
 import { BaseGenerator } from './generators/base.js';
 import type { AstNode, VarsMap } from './core/types.js';
@@ -14,14 +15,15 @@ export { ReactGenerator } from './generators/react.js';
 export { VueGenerator } from './generators/vue.js';
 export { AstroGenerator } from './generators/astro.js';
 export type { AstroGeneratorOptions } from './generators/astro.js';
-export type { Token, ElementNode, LoopNode, CondNode, AstNode, TextSegment, VarValue, VarsMap } from './core/types.js';
+export type { Token, ElementNode, LoopNode, CondNode, ComponentDefNode, ComponentCallNode, AstNode, TextSegment, VarValue, VarsMap } from './core/types.js';
+export { expandComponents } from './core/expand.js';
 
 export function parse(input: string): AstNode[] {
   return buildAst(tokenize(input));
 }
 
 export function generate(ast: AstNode[], generator: BaseGenerator): string {
-  return generator.generate(ast);
+  return generator.generate(expandComponents(ast));
 }
 
 export function compile(input: string, vars?: VarsMap): string {

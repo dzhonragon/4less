@@ -1,4 +1,4 @@
-import type { Token, ElementNode, LoopNode, CondNode, AstNode, TextSegment } from './types.js';
+import type { Token, ElementNode, LoopNode, CondNode, AstNode, TextSegment, ComponentDefNode, ComponentCallNode } from './types.js';
 import { ParseError } from '../errors.js';
 
 class Parser {
@@ -59,7 +59,47 @@ class Parser {
     const tok = this.peek();
     if (tok.value === 'for') return this.parseLoop();
     if (tok.value === 'if') return this.parseCond();
+    if (tok.value === 'component') return this.parseComponentDef();
+    if (tok.type === 'ID' && /^[A-Z]/.test(tok.value!)) return this.parseComponentCall();
     return this.parseElement();
+  }
+
+  private parseComponentDef(): ComponentDefNode {
+    this.consume('ID'); // 'component'
+    const nameTok = this.consume('ID');
+    const name = nameTok.value!;
+    if (!/^[A-Z]/.test(name)) {
+      throw new ParseError([{
+        line: nameTok.line,
+        col: nameTok.col,
+        message: `component name must start with uppercase, got '${name}'`,
+      }]);
+    }
+    this.consume('LBRACE');
+    const body: AstNode[] = [];
+    while (this.peek().type !== 'RBRACE') {
+      if (this.peek().type === 'EOF') {
+        const tok = this.peek();
+        throw new ParseError([{ line: tok.line, col: tok.col, message: `missing closing '}' in component '${name}'` }]);
+      }
+      body.push(this.parseAnyNode());
+    }
+    this.consume('RBRACE');
+    return { type: 'component_def', name, body };
+  }
+
+  private parseComponentCall(): ComponentCallNode {
+    const nameTok = this.consume('ID');
+    const props: Record<string, string> = {};
+    while (
+      this.peek().type === 'ID' &&
+      this.tokens[this.pos + 1]?.type === 'COLON'
+    ) {
+      const key = this.consume('ID').value!;
+      this.consume('COLON');
+      props[key] = this.consume('STRING').value!;
+    }
+    return { type: 'component_call', name: nameTok.value!, props, line: nameTok.line, col: nameTok.col };
   }
 
   private parseLoop(): LoopNode {
@@ -92,6 +132,13 @@ class Parser {
   private parseElement(): ElementNode {
     const tagTok = this.consume('ID');
     const tag = tagTok.value!;
+    if (/^[A-Z]/.test(tag)) {
+      throw new ParseError([{
+        line: tagTok.line,
+        col: tagTok.col,
+        message: `'${tag}' looks like a component; wrap it: 'for x in xs: div { ${tag} ... }'`,
+      }]);
+    }
 
     const classes: string[] = [];
     let id: string | null = null;
