@@ -34,9 +34,9 @@ jobs:
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Publish to npm
-        run: npm publish --provenance --access public
-        env:
-          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+        run: |
+          echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
+          npm publish --provenance --access public
 
       - name: Create git tag
         run: |
