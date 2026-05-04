@@ -23,28 +23,7 @@ div class:"max-w-5xl mx-auto px-6 pt-12 pb-16" {
     div class:"flex-1 min-w-0" {
       h1 "Documentation" class:"text-3xl font-bold text-white mb-2"
       p "Everything you need to use 4less effectively." class:"text-zinc-400 mb-8"
-      div class:"grid grid-cols-2 gap-4" {
-        a class:"block rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4 hover:border-zinc-600 transition-colors" href:"getting-started/" {
-          p "Getting Started" class:"text-sm font-semibold text-white"
-          p "Install 4less and write your first template in under five minutes." class:"mt-1 text-xs text-zinc-400"
-        }
-        a class:"block rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4 hover:border-zinc-600 transition-colors" href:"syntax/" {
-          p "Syntax Reference" class:"text-sm font-semibold text-white"
-          p "Complete reference for all language constructs and features." class:"mt-1 text-xs text-zinc-400"
-        }
-        a class:"block rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4 hover:border-zinc-600 transition-colors" href:"api-reference/" {
-          p "API Reference" class:"text-sm font-semibold text-white"
-          p "TypeScript API for compiling, parsing, and generating output." class:"mt-1 text-xs text-zinc-400"
-        }
-        a class:"block rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4 hover:border-zinc-600 transition-colors" href:"cli/" {
-          p "CLI Reference" class:"text-sm font-semibold text-white"
-          p "Command-line interface for compiling .4l files." class:"mt-1 text-xs text-zinc-400"
-        }
-        a class:"block rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4 hover:border-zinc-600 transition-colors" href:"integrations/" {
-          p "Integrations" class:"text-sm font-semibold text-white"
-          p "Use 4less with Vite, Webpack, and esbuild build tools." class:"mt-1 text-xs text-zinc-400"
-        }
-      }
+      div class:"grid grid-cols-2 gap-4" id:"__guide-cards__" {}
     }
   }
 }

@@ -301,15 +301,42 @@ ${LANDING_SCRIPT}
 );
 console.log('  done');
 
-// ── 8. Build guide hub (pages/guide/index.html) ─────────────────────────
+// ── 8. Guide pages config ────────────────────────────────────────────────
+const GUIDE_PAGES = [
+  { slug: 'getting-started', fallbackTitle: 'Getting Started' },
+  { slug: 'syntax',          fallbackTitle: 'Syntax Reference' },
+  { slug: 'api-reference',   fallbackTitle: 'API Reference' },
+  { slug: 'cli',             fallbackTitle: 'CLI Reference' },
+  { slug: 'integrations',    fallbackTitle: 'Integrations' },
+];
+
+// ── 9. Build guide hub (pages/guide/index.html) ─────────────────────────
 console.log('Building docs/pages/guide/index.html from pages/guide.4l …');
 const guideBody = compile(readFile('docs/pages/guide.4l'));
+
+const guideCards = GUIDE_PAGES.map(({ slug, fallbackTitle }) => {
+  const mdSrc = readFile(`docs/${slug}.md`);
+  const titleMatch = mdSrc.match(/^title:\s*(.+)$/m);
+  const descMatch = mdSrc.match(/^description:\s*(.+)$/m);
+  const title = titleMatch ? titleMatch[1].trim() : fallbackTitle;
+  const desc = descMatch ? descMatch[1].trim() : '';
+
+  return `<a class="block rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4 hover:border-zinc-600 transition-colors" href="${slug}/">
+  <p class="text-sm font-semibold text-white">${esc(title)}</p>
+  <p class="mt-1 text-xs text-zinc-400">${esc(desc)}</p>
+</a>`;
+}).join('\n        ');
+
+const guideFinal = guideBody.replace(
+  '<div class="grid grid-cols-2 gap-4" id="__guide-cards__"></div>',
+  `<div class="grid grid-cols-2 gap-4">\n        ${guideCards}\n      </div>`,
+);
 
 mkdirSync(resolve(root, 'docs/pages/guide'), { recursive: true });
 writeFileSync(resolve(root, 'docs/pages/guide/index.html'),
   `${htmlHead('Documentation — 4less', '4less documentation — getting started, syntax reference, API, CLI, and integrations.')}
 <body class="bg-zinc-950 text-zinc-100 min-h-screen">
-${guideBody}
+${guideFinal}
 </body>
 </html>`,
 );
@@ -390,14 +417,6 @@ function renderMarkdown(src) {
 }
 
 // ── 10. Build individual guide pages ────────────────────────────────────
-const GUIDE_PAGES = [
-  { slug: 'getting-started', fallbackTitle: 'Getting Started' },
-  { slug: 'syntax',          fallbackTitle: 'Syntax Reference' },
-  { slug: 'api-reference',   fallbackTitle: 'API Reference' },
-  { slug: 'cli',             fallbackTitle: 'CLI Reference' },
-  { slug: 'integrations',    fallbackTitle: 'Integrations' },
-];
-
 const sidebarHtml = compileFile('docs/pages/components/doc-sidebar.4l');
 const navHtml     = compileFile('docs/pages/components/navigation.4l');
 const footerHtml  = compileFile('docs/pages/components/page-footer.4l');
