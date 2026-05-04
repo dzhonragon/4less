@@ -55,6 +55,9 @@
     "bench": "vitest bench",
     "docs:build": "npm run build && node scripts/build-docs.mjs",
     "docs:preview": "npx serve docs -l 3000",
+    "changeset": "changeset",
+    "changeset:version": "changeset version",
+    "publish-packages": "npm publish",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
