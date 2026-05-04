@@ -70,7 +70,7 @@ describe('VueGenerator', () => {
       type: 'loop', variable: 'item', iterable: 'items',
       body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'item' }], children: [] },
     };
-    expect(gen.generate([loop])).toBe('<li v-for="item in items">{{ item }}</li>');
+    expect(gen.generate([loop])).toBe('<li v-for="item in items" :key="item">{{ item }}</li>');
   });
 
   it('renders loop nested inside a parent element', () => {
@@ -79,7 +79,7 @@ describe('VueGenerator', () => {
       body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'x' }], children: [] },
     };
     const ul = el('ul', { children: [loop] });
-    expect(gen.generate([ul])).toBe('<ul><li v-for="x in list">{{ x }}</li></ul>');
+    expect(gen.generate([ul])).toBe('<ul><li v-for="x in list" :key="x">{{ x }}</li></ul>');
   });
 
   it('renders conditional as v-if on element', () => {
@@ -99,7 +99,7 @@ describe('VueGenerator', () => {
       type: 'cond', condition: 'hasItems', body: loop,
     };
     expect(gen.generate([cond])).toBe(
-      '<template v-if="hasItems"><li v-for="item in items">{{ item }}</li></template>'
+      '<template v-if="hasItems"><li v-for="item in items" :key="item">{{ item }}</li></template>'
     );
   });
 
