@@ -35,7 +35,7 @@ jobs:
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Publish to npm
-        run: npm publish --provenance
+        run: npm publish --provenance --access public
 
       - name: Create git tag
         run: |
