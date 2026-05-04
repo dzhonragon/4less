@@ -24,11 +24,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          registry-url: https://registry.npmjs.org/
 
       - run: npm ci
       - run: npm run build
-      - run: npm run test
+      - run: npm test
 
       - name: Get version
         id: version
@@ -36,6 +35,8 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --provenance --access public
+        env:
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
 
       - name: Create git tag
         run: |
