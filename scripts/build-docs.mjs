@@ -167,10 +167,20 @@ const heroTabCode    = document.getElementById('hero-tab-code');
 const heroTabPreview = document.getElementById('hero-tab-preview');
 let heroShowOutput = false;
 
+const DEFAULT_VARS = {
+  name: 'Alice',
+  role: 'Frontend developer',
+  admin: true,
+  show: true,
+  items: ['TypeScript', 'React', 'Vue'],
+  stack: ['TypeScript', 'React', 'Tailwind'],
+  label: 'stable',
+};
+
 function runHero() {
   if (!heroShowOutput) return;
   try {
-    heroOutput.textContent = generate(parse(heroInput.value), new HtmlGenerator());
+    heroOutput.textContent = generate(parse(heroInput.value), new HtmlGenerator({ vars: DEFAULT_VARS }));
     heroOutput.classList.replace('text-red-400', 'text-emerald-400');
   } catch (e) {
     heroOutput.textContent = e instanceof ParseError
@@ -220,7 +230,7 @@ function runEditor() {
   try {
     const ast = parse(editorInput.value);
     if (format === 'preview') {
-      const html = generate(ast, new HtmlGenerator());
+      const html = generate(ast, new HtmlGenerator({ vars: DEFAULT_VARS }));
       editorPreview.srcdoc = \`<!doctype html><html><head><style>\${PREVIEW_CSS}</style></head><body>\${html}</body></html>\`;
       editorOutput.classList.add('hidden');
       editorPreview.classList.remove('hidden');
