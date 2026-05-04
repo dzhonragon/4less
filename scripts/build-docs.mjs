@@ -115,16 +115,19 @@ function syntaxCard(title, src, vars = {}) {
   try { rendered = compile(src, vars); }
   catch (e) { rendered = `<span style="color:red">${esc(e.message)}</span>`; }
   const srcdoc = esc(`<!doctype html><html><head><style>${CARD_CSS}</style></head><body>${rendered}</body></html>`);
-  return `<div class="syntax-card" data-state="preview">
-  <div class="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800">
-    <span class="text-sm font-medium text-zinc-100">${esc(title)}</span>
-    <button class="toggle-view font-mono text-xs text-zinc-500 px-2 py-0.5 rounded border border-zinc-700 transition-colors hover:text-zinc-200 hover:border-zinc-500">&lt;/&gt;</button>
+  return `<div class="syntax-card rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden" data-state="source">
+  <div class="flex items-center justify-between px-4 py-2 border-b border-zinc-800">
+    <span class="text-xs text-zinc-400 font-mono">${esc(title)}</span>
+    <div class="flex gap-1">
+      <button class="card-tab card-tab-source text-xs font-mono px-2 py-0.5 rounded text-white bg-zinc-700">4less</button>
+      <button class="card-tab card-tab-preview text-xs font-mono px-2 py-0.5 rounded text-zinc-400">preview</button>
+    </div>
   </div>
-  <div class="preview-pane p-3">
-    <iframe class="w-full rounded border-0 bg-slate-50" style="height:110px" srcdoc="${srcdoc}" scrolling="no"></iframe>
+  <div class="source-pane overflow-x-auto" style="min-height:116px">
+    <pre style="margin:0;padding:14px 16px"><code class="hljs language-4l text-xs font-mono leading-relaxed">${esc(src.trim())}</code></pre>
   </div>
-  <div class="source-pane hidden px-4 py-3 bg-zinc-950 overflow-x-auto">
-    <pre><code class="hljs language-4l text-xs font-mono leading-relaxed">${esc(src.trim())}</code></pre>
+  <div class="preview-pane hidden p-3" style="min-height:116px">
+    <iframe class="w-full rounded border-0 bg-slate-50" style="height:92px" srcdoc="${srcdoc}" scrolling="no"></iframe>
   </div>
 </div>`;
 }
@@ -167,16 +170,33 @@ const PREVIEW_CSS = ${JSON.stringify(PREVIEW_CSS)};
 const EXAMPLES = ${JSON.stringify(EDITOR_EXAMPLES, null, 2)};
 
 // ── Syntax card toggles ──────────────────────────────────────────────────
-document.querySelectorAll('.syntax-card .toggle-view').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const card = btn.closest('.syntax-card');
-    const preview = card.querySelector('.preview-pane');
-    const source  = card.querySelector('.source-pane');
-    const showing = card.dataset.state === 'preview';
-    preview.classList.toggle('hidden', showing);
-    source.classList.toggle('hidden', !showing);
-    card.dataset.state = showing ? 'source' : 'preview';
-    btn.textContent = showing ? 'preview' : '</>';
+document.querySelectorAll('.syntax-card').forEach(card => {
+  const tabSource  = card.querySelector('.card-tab-source');
+  const tabPreview = card.querySelector('.card-tab-preview');
+  const sourcePan  = card.querySelector('.source-pane');
+  const previewPan = card.querySelector('.preview-pane');
+
+  function activate(tab) {
+    [tabSource, tabPreview].forEach(t => {
+      t.classList.remove('text-white', 'bg-zinc-700');
+      t.classList.add('text-zinc-400');
+    });
+    tab.classList.remove('text-zinc-400');
+    tab.classList.add('text-white', 'bg-zinc-700');
+  }
+
+  tabSource.addEventListener('click', () => {
+    activate(tabSource);
+    sourcePan.classList.remove('hidden');
+    previewPan.classList.add('hidden');
+    card.dataset.state = 'source';
+  });
+
+  tabPreview.addEventListener('click', () => {
+    activate(tabPreview);
+    previewPan.classList.remove('hidden');
+    sourcePan.classList.add('hidden');
+    card.dataset.state = 'preview';
   });
 });
 
