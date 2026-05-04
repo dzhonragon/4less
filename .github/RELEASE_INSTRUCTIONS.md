@@ -25,16 +25,19 @@ Use conventional commits:
 
 ## Release Process
 
-1. Ensure main branch is clean and ready
-2. Go to Actions tab > Publish workflow
-3. Click "Run workflow"
-4. Enter version: patch, minor, major, or specific version (2.1.1)
-5. GitHub Actions will:
-   - Run tests
-   - Update package.json version
-   - Publish to npm (with provenance)
-   - Create git tag
-   - Push changes
+1. Update package.json version locally
+
+```bash
+npm version patch   # or minor, major
+npm run build
+npm test
+git push origin main
+```
+
+2. GitHub Actions automatically:
+   - Runs tests
+   - Publishes to npm (with provenance)
+   - Pushes git tag
 
 ## Manual Release (local)
 

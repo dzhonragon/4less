@@ -1,12 +1,10 @@
 name: Publish
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: Version to publish (patch, minor, major, or specific version)
-        required: true
-        default: patch
+  push:
+    branches: [main]
+    paths:
+      - package.json
 
 jobs:
   publish:
@@ -32,9 +30,4 @@ jobs:
       - run: npm run build
       - run: npm run test
 
-      - run: npm version ${{ github.event.inputs.version }} --allow-same-version
       - run: npm publish --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
-
-      - run: git push origin main --tags
