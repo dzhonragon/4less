@@ -1,6 +1,6 @@
 {
   "name": "@dzhonragon/4less",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Minimal DSL for HTML with variables, loops & conditionals. Zero dependencies. Compile to React, Vue, Astro, or plain HTML.",
   "type": "module",
   "main": "dist/index.js",
@@ -55,9 +55,6 @@
     "bench": "vitest bench",
     "docs:build": "npm run build && node scripts/build-docs.mjs",
     "docs:preview": "npx serve docs -l 3000",
-    "changeset": "changeset",
-    "changeset:version": "changeset version",
-    "publish-packages": "npm publish",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
