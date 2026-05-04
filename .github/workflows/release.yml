@@ -24,7 +24,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          registry-url: https://registry.npmjs.org/
 
+      - run: npm install -g npm@latest
       - run: npm ci
       - run: npm run build
       - run: npm test
@@ -35,7 +37,7 @@ jobs:
 
       - name: Publish to npm
         run: |
-          echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
+          sed -i '/_authToken/d' "${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
           npm publish --provenance --access public
 
       - name: Create git tag
