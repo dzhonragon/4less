@@ -50,7 +50,7 @@
     "url": "https://github.com/dzhonragon/4less/issues"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/add-shebang.mjs",
     "test": "vitest run",
     "bench": "vitest bench",
     "docs:build": "npm run build && node scripts/build-docs.mjs",
