@@ -26,7 +26,7 @@ Click "Add a trusted publisher" and select GitHub.
 Fill in:
 - Organization/User: dzhonragon
 - Repository: 4less
-- Workflow: .github/workflows/release.yml
+- Workflow filename: release.yml (filename only, not path)
 - Environment name: publish
 
 Confirm and save.

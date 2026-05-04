@@ -9,7 +9,7 @@ Configure npm Trusted Publisher at https://www.npmjs.com/settings/{username}/tru
 Settings:
 - Repository: dzhonragon/4less
 - Repository owner: dzhonragon
-- Workflow file: .github/workflows/release.yml
+- Workflow filename: release.yml (filename only, not path)
 - Environment name: publish
 
 This enables GitHub Actions to publish to npm without storing NPM_TOKEN as a secret.
