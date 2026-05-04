@@ -61,10 +61,19 @@ function htmlHead(title, description) {
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/atom-one-dark.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
   <style>
     body { font-family: 'Inter', system-ui, sans-serif; }
     code, pre, .font-mono, textarea { font-family: 'JetBrains Mono', ui-monospace, monospace; }
     iframe { display: block; }
+    pre { background: #282c34 !important; }
+    code.hljs { background: #282c34; color: #abb2bf; padding: 0; }
+    .hljs-attr { color: #e06c75; }
+    .hljs-string { color: #98c379; }
+    .hljs-literal { color: #61afef; }
+    .hljs-number { color: #d19a66; }
+    .hljs-title { color: #61afef; }
   </style>
 </head>`;
 }
@@ -306,6 +315,7 @@ writeFileSync(resolve(root, 'docs/index.html'),
 <body class="bg-zinc-950 text-zinc-100 min-h-screen">
 ${indexFinal}
 ${LANDING_SCRIPT}
+<script>hljs.highlightAll();</script>
 </body>
 </html>`,
 );
@@ -374,8 +384,9 @@ function renderMarkdown(src) {
   const codeBlocks = [];
   src = src.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const i = codeBlocks.length;
+    const langClass = lang ? `language-${lang}` : '';
     codeBlocks.push(
-      `<pre class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 overflow-x-auto my-5"><code class="text-emerald-400 text-sm font-mono leading-relaxed">${esc(code.trim())}</code></pre>`,
+      `<pre class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 overflow-x-auto my-5"><code class="hljs ${langClass} text-sm font-mono leading-relaxed">${esc(code.trim())}</code></pre>`,
     );
     return `\x00CODE${i}\x00`;
   });
@@ -458,6 +469,7 @@ ${navHtml}
 </div>
 ${footerHtml}
 ${SIDEBAR_ACTIVE_SCRIPT}
+<script>hljs.highlightAll();</script>
 </body>
 </html>`;
 
