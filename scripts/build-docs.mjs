@@ -63,17 +63,29 @@ function htmlHead(title, description) {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/atom-one-dark.min.css"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
+  <script>
+    hljs.registerLanguage('4l', function(hljs) {
+      return {
+        name: '4less',
+        keywords: { keyword: 'for in if component' },
+        contains: [
+          hljs.QUOTE_STRING_MODE,
+          { className: 'variable',        begin: /\\$[a-zA-Z_]\\w*/ },
+          { className: 'selector-id',     begin: /#[a-zA-Z_][a-zA-Z0-9_-]*/ },
+          { className: 'selector-class',  begin: /\\.[a-zA-Z_][a-zA-Z0-9_-]*/ },
+          { className: 'attr',            begin: /[a-zA-Z_-]+(?=:)/ },
+          { className: 'name',            begin: /\\b[a-z][a-z0-9-]*(?=[ .#{\\n])/ },
+        ],
+      };
+    });
+  </script>
   <style>
     body { font-family: 'Inter', system-ui, sans-serif; }
     code, pre, .font-mono, textarea { font-family: 'JetBrains Mono', ui-monospace, monospace; }
     iframe { display: block; }
     pre { background: #282c34 !important; }
     code.hljs { background: #282c34; color: #abb2bf; padding: 0; }
-    .hljs-attr { color: #e06c75; }
-    .hljs-string { color: #98c379; }
-    .hljs-literal { color: #61afef; }
-    .hljs-number { color: #d19a66; }
-    .hljs-title { color: #61afef; }
+    pre.hljs  { color: #abb2bf; border-radius: 0.75rem; }
   </style>
 </head>`;
 }
@@ -112,7 +124,7 @@ function syntaxCard(title, src, vars = {}) {
     <iframe class="w-full rounded border-0 bg-slate-50" style="height:110px" srcdoc="${srcdoc}" scrolling="no"></iframe>
   </div>
   <div class="source-pane hidden px-4 py-3 bg-zinc-950 overflow-x-auto">
-    <pre class="text-zinc-300 text-xs font-mono whitespace-pre">${esc(src.trim())}</pre>
+    <pre><code class="hljs language-4l text-xs font-mono leading-relaxed">${esc(src.trim())}</code></pre>
   </div>
 </div>`;
 }
@@ -190,12 +202,13 @@ function runHero() {
   if (!heroShowOutput) return;
   try {
     heroOutput.textContent = generate(parse(heroInput.value), new HtmlGenerator({ vars: DEFAULT_VARS }));
-    heroOutput.classList.replace('text-red-400', 'text-emerald-400');
+    heroOutput.className = 'font-mono text-xs p-4 whitespace-pre-wrap overflow-auto max-h-48 language-html';
+    hljs.highlightElement(heroOutput);
   } catch (e) {
+    heroOutput.className = 'text-red-400 font-mono text-xs p-4 whitespace-pre-wrap overflow-auto max-h-48';
     heroOutput.textContent = e instanceof ParseError
       ? e.errors.map(r => \`line \${r.line}:\${r.col} — \${r.message}\`).join('\\n')
       : String(e);
-    heroOutput.classList.replace('text-emerald-400', 'text-red-400');
   }
 }
 
@@ -235,6 +248,8 @@ const tabs   = document.querySelectorAll('#format-tabs .tab-btn');
 const exBtns = document.querySelectorAll('.example-btn');
 let format = 'html';
 
+const FORMAT_LANG = { html: 'html', react: 'jsx', vue: 'html', astro: 'html' };
+
 function runEditor() {
   try {
     const ast = parse(editorInput.value);
@@ -251,14 +266,13 @@ function runEditor() {
         astro: new AstroGenerator({ fragment: false }),
       };
       editorOutput.textContent = generate(ast, gens[format]);
-      editorOutput.classList.remove('hidden', 'text-red-400');
-      editorOutput.classList.add('text-emerald-400');
+      editorOutput.className = \`font-mono text-sm p-4 whitespace-pre-wrap language-\${FORMAT_LANG[format] || 'html'}\`;
       editorPreview.classList.add('hidden');
+      hljs.highlightElement(editorOutput);
     }
   } catch (e) {
     editorPreview.classList.add('hidden');
-    editorOutput.classList.remove('hidden', 'text-emerald-400');
-    editorOutput.classList.add('text-red-400');
+    editorOutput.className = 'text-red-400 font-mono text-sm p-4 whitespace-pre-wrap';
     editorOutput.textContent = e instanceof ParseError
       ? e.errors.map(r => \`line \${r.line}:\${r.col} — \${r.message}\`).join('\\n')
       : String(e);
@@ -384,7 +398,7 @@ function renderMarkdown(src) {
   const codeBlocks = [];
   src = src.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const i = codeBlocks.length;
-    const langClass = lang ? `language-${lang}` : '';
+    const langClass = `language-${lang || '4l'}`;
     codeBlocks.push(
       `<pre class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 overflow-x-auto my-5"><code class="hljs ${langClass} text-sm font-mono leading-relaxed">${esc(code.trim())}</code></pre>`,
     );
