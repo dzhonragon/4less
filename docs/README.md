@@ -34,4 +34,4 @@ npx 4less index.4l
 | **CLI Reference** | [cli.md](cli.md) |
 | **Integrations** | [integrations.md](integrations.md) |
 
-**[→ Live site & playground](https://dzhonragon.github.io/4less)**
+**[→ Live site & playground](https://4less.dzhonragon.com)**

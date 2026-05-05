@@ -121,14 +121,36 @@ function highlight4l(src) {
 }
 
 // ── 4. Shared HTML head ──────────────────────────────────────────────────
-function htmlHead(title, description) {
+const SITE_URL  = 'https://4less.dzhonragon.com';
+const SITE_NAME = '4less';
+
+function htmlHead(title, description, canonicalPath = '/') {
+  const canonical = `${SITE_URL}${canonicalPath}`;
+  const t = esc(title);
+  const d = esc(description);
   return `<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="description" content="${esc(description)}"/>
-  <title>${esc(title)}</title>
+  <meta name="description" content="${d}"/>
+  <meta name="robots" content="index, follow"/>
+  <title>${t}</title>
+  <link rel="canonical" href="${canonical}"/>
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website"/>
+  <meta property="og:site_name"   content="${SITE_NAME}"/>
+  <meta property="og:title"       content="${t}"/>
+  <meta property="og:description" content="${d}"/>
+  <meta property="og:url"         content="${canonical}"/>
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary"/>
+  <meta name="twitter:title"       content="${t}"/>
+  <meta name="twitter:description" content="${d}"/>
+  <meta name="twitter:creator"     content="@dzhonragon"/>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' }</script>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -391,11 +413,28 @@ const indexFinal = indexBody.replace(
 );
 
 mkdirSync(resolve(root, 'docs'), { recursive: true });
+writeFileSync(resolve(root, 'docs/CNAME'), '4less.dzhonragon.com\n');
 writeFileSync(resolve(root, 'docs/index.html'),
-  `${htmlHead('4less', '4less — minimal DSL that compiles to HTML, React, Vue and Astro. Zero dependencies.')}
+  `${htmlHead('4less', '4less — minimal DSL that compiles to HTML, React, Vue and Astro. Zero dependencies.', '/')}
 <body class="bg-zinc-950 text-zinc-100 min-h-screen">
 ${indexFinal}
 ${LANDING_SCRIPT}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "4less",
+  "description": "Minimal DSL for HTML with variables, loops and conditionals. Compile to React, Vue, Astro or plain HTML. Zero dependencies.",
+  "url": "${SITE_URL}",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "dzhonragon", "url": "https://github.com/dzhonragon" },
+  "codeRepository": "https://github.com/dzhonragon/4less",
+  "license": "https://opensource.org/licenses/MIT",
+  "programmingLanguage": "TypeScript"
+}
+</script>
 </body>
 </html>`,
 );
@@ -434,7 +473,7 @@ const guideFinal = guideBody.replace(
 
 mkdirSync(resolve(root, 'docs/pages/guide'), { recursive: true });
 writeFileSync(resolve(root, 'docs/pages/guide/index.html'),
-  `${htmlHead('Documentation — 4less', '4less documentation — getting started, syntax reference, API, CLI, and integrations.')}
+  `${htmlHead('Documentation — 4less', '4less documentation — getting started, syntax reference, API, CLI, and integrations.', '/pages/guide/')}
 <body class="bg-zinc-950 text-zinc-100 min-h-screen">
 ${guideFinal}
 </body>
@@ -540,7 +579,7 @@ for (const { slug, fallbackTitle } of GUIDE_PAGES) {
   const { title, html: contentHtml } = renderMarkdown(mdSrc);
   const pageTitle = title || fallbackTitle;
 
-  const html = `${htmlHead(`${pageTitle} — 4less`, `${pageTitle} — 4less documentation`)}
+  const html = `${htmlHead(`${pageTitle} — 4less`, `${pageTitle} — 4less documentation`, `/pages/guide/${slug}/`)}
 <body class="bg-zinc-950 text-zinc-100 min-h-screen">
 ${navHtml}
 <div class="max-w-5xl mx-auto px-6 py-12 flex gap-10">
