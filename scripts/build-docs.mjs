@@ -409,7 +409,7 @@ console.log('Building docs/index.html from pages/index.4l …');
 const indexBody = compile(readFile('docs/pages/index.4l'));
 const indexFinal = indexBody.replace(
   '<span id="__syntax-showcase__"></span>',
-  `<div class="grid grid-cols-3 gap-3">${syntaxCards}</div>`,
+  `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">${syntaxCards}</div>`,
 );
 
 mkdirSync(resolve(root, 'docs'), { recursive: true });
@@ -582,8 +582,13 @@ for (const { slug, fallbackTitle } of GUIDE_PAGES) {
   const html = `${htmlHead(`${pageTitle} — 4less`, `${pageTitle} — 4less documentation`, `/pages/guide/${slug}/`)}
 <body class="bg-zinc-950 text-zinc-100 min-h-screen">
 ${navHtml}
-<div class="max-w-5xl mx-auto px-6 py-12 flex gap-10">
-  ${sidebarHtml}
+<div class="lg:hidden border-b border-zinc-800 px-4 py-2.5 flex items-center gap-2 text-sm">
+  <a href="/pages/guide/" class="text-zinc-400 hover:text-zinc-100 transition-colors">Guide</a>
+  <span class="text-zinc-700">/</span>
+  <span class="text-zinc-300">${pageTitle}</span>
+</div>
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 lg:flex gap-10">
+  <div class="hidden lg:block">${sidebarHtml}</div>
   <article class="flex-1 min-w-0 max-w-none">
     ${contentHtml}
   </article>
