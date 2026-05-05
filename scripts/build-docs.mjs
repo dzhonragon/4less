@@ -144,8 +144,8 @@ function htmlHead(title, description) {
 
 // ── 5. Syntax showcase cards ─────────────────────────────────────────────
 const CARD_CSS = `
-  *{box-sizing:border-box;font-family:system-ui,sans-serif;font-size:13px;line-height:1.5;color:#111}
-  body{margin:0;padding:12px;background:#f8fafc}
+  *{box-sizing:border-box;font-family:system-ui,sans-serif;font-size:14px;line-height:1.6;color:#111}
+  body{margin:0;padding:16px;background:#f8fafc}
   div{margin:2px 0}
   .card{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px}
   h1{font-size:1.3em;font-weight:700;margin:0 0 4px}
@@ -175,11 +175,11 @@ function syntaxCard(title, src, vars = {}) {
       <button class="card-tab card-tab-preview text-xs font-mono px-2 py-0.5 rounded text-zinc-400">preview</button>
     </div>
   </div>
-  <div class="source-pane overflow-x-auto bg-zinc-950" style="min-height:116px">
+  <div class="source-pane overflow-x-auto bg-zinc-950" style="min-height:160px">
     <pre style="margin:0;padding:14px 16px;color:#d1d5db;font-size:.75rem;line-height:1.6;font-family:inherit">${highlight4l(src.trim())}</pre>
   </div>
-  <div class="preview-pane hidden p-3" style="min-height:116px">
-    <iframe class="w-full rounded border-0 bg-slate-50" style="height:92px" srcdoc="${srcdoc}" scrolling="no"></iframe>
+  <div class="preview-pane hidden" style="min-height:160px">
+    <iframe class="w-full border-0" style="height:160px" srcdoc="${srcdoc}" scrolling="auto"></iframe>
   </div>
 </div>`;
 }
@@ -254,7 +254,7 @@ document.querySelectorAll('.syntax-card').forEach(card => {
 
 // ── Hero mini editor ─────────────────────────────────────────────────────
 const heroInput      = document.getElementById('hero-input');
-const heroOutput     = document.getElementById('hero-output');
+const heroPreview    = document.getElementById('hero-preview');
 const heroWrap       = document.getElementById('hero-output-wrap');
 const heroTabCode    = document.getElementById('hero-tab-code');
 const heroTabPreview = document.getElementById('hero-tab-preview');
@@ -273,13 +273,13 @@ const DEFAULT_VARS = {
 function runHero() {
   if (!heroShowOutput) return;
   try {
-    heroOutput.textContent = generate(parse(heroInput.value), new HtmlGenerator({ vars: DEFAULT_VARS }));
-    heroOutput.className = 'text-emerald-400 font-mono text-xs p-4 whitespace-pre-wrap overflow-auto max-h-48';
+    const html = generate(parse(heroInput.value), new HtmlGenerator({ vars: DEFAULT_VARS }));
+    heroPreview.srcdoc = \`<!doctype html><html><head><style>\${PREVIEW_CSS}</style></head><body>\${html}</body></html>\`;
   } catch (e) {
-    heroOutput.className = 'text-red-400 font-mono text-xs p-4 whitespace-pre-wrap overflow-auto max-h-48';
-    heroOutput.textContent = e instanceof ParseError
+    const msg = e instanceof ParseError
       ? e.errors.map(r => \`line \${r.line}:\${r.col} — \${r.message}\`).join('\\n')
       : String(e);
+    heroPreview.srcdoc = \`<!doctype html><html><head><style>body{margin:16px;font:12px/1.5 monospace;color:#f87171;background:#0a0a0a}</style></head><body><pre>\${msg}</pre></body></html>\`;
   }
 }
 

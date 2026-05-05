@@ -30,12 +30,12 @@ div class:"max-w-5xl mx-auto px-6 pt-16 pb-8" {
         span "live preview" class:"text-xs text-zinc-500 font-mono"
         div class:"flex gap-1" {
           button "4less" id:"hero-tab-code" class:"text-xs font-mono px-2 py-0.5 rounded text-white bg-zinc-700"
-          button "HTML"  id:"hero-tab-preview" class:"text-xs font-mono px-2 py-0.5 rounded text-zinc-400"
+          button "preview" id:"hero-tab-preview" class:"text-xs font-mono px-2 py-0.5 rounded text-zinc-400"
         }
       }
       textarea id:"hero-input" class:"w-full bg-zinc-950 text-zinc-100 font-mono text-sm p-4 resize-none outline-none min-h-48" spellcheck:"false"
       div id:"hero-output-wrap" class:"hidden border-t border-zinc-800" {
-        pre id:"hero-output" class:"text-emerald-400 font-mono text-xs p-4 whitespace-pre-wrap overflow-auto max-h-48"
+        iframe id:"hero-preview" class:"w-full border-0 bg-white" style:"height:192px"
       }
     }
   }
