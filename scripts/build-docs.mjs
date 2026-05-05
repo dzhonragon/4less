@@ -222,7 +222,7 @@ const syntaxCards = [
     `if admin: p "Admin panel"\nelse: p "Public only"`,
     { admin: false }),
   syntaxCard('Attr interpolation',
-    `a $title href:"/posts/$slug"\na "Edit" href:"/posts/$slug/edit"`,
+    `p { a $title href:"/posts/$slug" }\np { a "Edit post" href:"/posts/$slug/edit" }`,
     { title: 'Hello World', slug: 'hello-world' }),
   syntaxCard('Components',
     `component Badge { span.badge $label }\n\nBadge label:"stable"\nBadge label:"v2.0"`),
