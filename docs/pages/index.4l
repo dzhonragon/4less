@@ -33,9 +33,9 @@ div class:"max-w-5xl mx-auto px-6 pt-16 pb-8" {
           button "preview" id:"hero-tab-preview" class:"text-xs font-mono px-2 py-0.5 rounded text-zinc-400"
         }
       }
-      textarea id:"hero-input" class:"w-full bg-zinc-950 text-zinc-100 font-mono text-sm p-4 resize-none outline-none min-h-48" spellcheck:"false"
-      div id:"hero-output-wrap" class:"hidden border-t border-zinc-800" {
-        iframe id:"hero-preview" class:"w-full border-0 bg-white" style:"height:192px"
+      div class:"relative" style:"height:220px" {
+        textarea id:"hero-input" class:"absolute inset-0 w-full h-full bg-zinc-950 text-zinc-100 font-mono text-sm p-4 resize-none outline-none" spellcheck:"false"
+        iframe id:"hero-preview" class:"absolute inset-0 w-full h-full border-0 bg-white hidden"
       }
     }
   }

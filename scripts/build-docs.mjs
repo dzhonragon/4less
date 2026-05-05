@@ -255,10 +255,8 @@ document.querySelectorAll('.syntax-card').forEach(card => {
 // ── Hero mini editor ─────────────────────────────────────────────────────
 const heroInput      = document.getElementById('hero-input');
 const heroPreview    = document.getElementById('hero-preview');
-const heroWrap       = document.getElementById('hero-output-wrap');
 const heroTabCode    = document.getElementById('hero-tab-code');
 const heroTabPreview = document.getElementById('hero-tab-preview');
-let heroShowOutput = false;
 
 const DEFAULT_VARS = {
   name: 'Alice',
@@ -271,7 +269,6 @@ const DEFAULT_VARS = {
 };
 
 function runHero() {
-  if (!heroShowOutput) return;
   try {
     const html = generate(parse(heroInput.value), new HtmlGenerator({ vars: DEFAULT_VARS }));
     heroPreview.srcdoc = \`<!doctype html><html><head><style>\${PREVIEW_CSS}</style></head><body>\${html}</body></html>\`;
@@ -283,22 +280,21 @@ function runHero() {
   }
 }
 
+function heroActivateTab(active, inactive, showEl, hideEl) {
+  active.classList.replace('text-zinc-400', 'text-white');
+  active.classList.add('bg-zinc-700');
+  inactive.classList.remove('bg-zinc-700');
+  inactive.classList.replace('text-white', 'text-zinc-400');
+  showEl.classList.remove('hidden');
+  hideEl.classList.add('hidden');
+}
+
 heroTabPreview.addEventListener('click', () => {
-  heroShowOutput = true;
-  heroWrap.classList.remove('hidden');
-  heroTabPreview.classList.replace('text-zinc-400', 'text-white');
-  heroTabPreview.classList.add('bg-zinc-700');
-  heroTabCode.classList.remove('bg-zinc-700');
-  heroTabCode.classList.replace('text-white', 'text-zinc-400');
+  heroActivateTab(heroTabPreview, heroTabCode, heroPreview, heroInput);
   runHero();
 });
 heroTabCode.addEventListener('click', () => {
-  heroShowOutput = false;
-  heroWrap.classList.add('hidden');
-  heroTabCode.classList.replace('text-zinc-400', 'text-white');
-  heroTabCode.classList.add('bg-zinc-700');
-  heroTabPreview.classList.remove('bg-zinc-700');
-  heroTabPreview.classList.replace('text-white', 'text-zinc-400');
+  heroActivateTab(heroTabCode, heroTabPreview, heroInput, heroPreview);
 });
 heroInput.addEventListener('input', runHero);
 heroInput.addEventListener('keydown', e => {
@@ -310,6 +306,7 @@ heroInput.addEventListener('keydown', e => {
   runHero();
 });
 heroInput.value = EXAMPLES.hello;
+runHero();
 
 // ── Full playground ──────────────────────────────────────────────────────
 const editorInput   = document.getElementById('editor-input');
