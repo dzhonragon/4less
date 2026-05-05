@@ -47,6 +47,79 @@ function compileFile(relPath) {
   return compile(readFile(relPath));
 }
 
+// ── 3b. Custom 4less syntax highlighter (site-palette colors) ────────────
+// Character-by-character tokenizer avoids regex re-processing own output.
+const KEYWORDS = new Set(['for', 'in', 'if', 'component']);
+function highlight4l(src) {
+  const out = [];
+  let i = 0;
+  const peek = () => src[i] ?? '';
+  const eat  = () => src[i++];
+
+  while (i < src.length) {
+    const ch = peek();
+
+    // String literal
+    if (ch === '"') {
+      let s = eat(); // opening "
+      while (i < src.length && peek() !== '"') {
+        s += eat();
+      }
+      s += eat(); // closing "
+      out.push(`<span style="color:#6ee7b7">${s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>`);
+      continue;
+    }
+
+    // Variable $name
+    if (ch === '$') {
+      let s = eat();
+      while (/[a-zA-Z0-9_]/.test(peek())) s += eat();
+      out.push(`<span style="color:#c084fc">${s}</span>`);
+      continue;
+    }
+
+    // ID selector #foo (must be preceded by word char, }, or whitespace to avoid # in other contexts)
+    if (ch === '#' && /[a-zA-Z_]/.test(src[i + 1] ?? '')) {
+      let s = eat(); // #
+      while (/[a-zA-Z0-9_-]/.test(peek())) s += eat();
+      out.push(`<span style="color:#38bdf8">${s}</span>`);
+      continue;
+    }
+
+    // Class selector .foo
+    if (ch === '.' && /[a-zA-Z_]/.test(src[i + 1] ?? '')) {
+      let s = eat(); // .
+      while (/[a-zA-Z0-9_-]/.test(peek())) s += eat();
+      out.push(`<span style="color:#38bdf8">${s}</span>`);
+      continue;
+    }
+
+    // Word: keyword, attribute key (word followed by :), or plain identifier
+    if (/[a-zA-Z_]/.test(ch)) {
+      let word = '';
+      while (/[a-zA-Z0-9_-]/.test(peek())) word += eat();
+      if (peek() === ':') {
+        // attribute key
+        out.push(`<span style="color:#94a3b8">${word}</span>`);
+      } else if (KEYWORDS.has(word)) {
+        out.push(`<span style="color:#818cf8">${word}</span>`);
+      } else {
+        out.push(word);
+      }
+      continue;
+    }
+
+    // HTML special chars
+    if (ch === '<') { eat(); out.push('&lt;'); continue; }
+    if (ch === '>') { eat(); out.push('&gt;'); continue; }
+    if (ch === '&') { eat(); out.push('&amp;'); continue; }
+
+    out.push(eat());
+  }
+
+  return out.join('');
+}
+
 // ── 4. Shared HTML head ──────────────────────────────────────────────────
 function htmlHead(title, description) {
   return `<!DOCTYPE html>
@@ -61,31 +134,10 @@ function htmlHead(title, description) {
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/atom-one-dark.min.css"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
-  <script>
-    hljs.registerLanguage('4l', function(hljs) {
-      return {
-        name: '4less',
-        keywords: { keyword: 'for in if component' },
-        contains: [
-          hljs.QUOTE_STRING_MODE,
-          { className: 'variable',        begin: /\\$[a-zA-Z_]\\w*/ },
-          { className: 'selector-id',     begin: /#[a-zA-Z_][a-zA-Z0-9_-]*/ },
-          { className: 'selector-class',  begin: /\\.[a-zA-Z_][a-zA-Z0-9_-]*/ },
-          { className: 'attr',            begin: /[a-zA-Z_-]+(?=:)/ },
-          { className: 'name',            begin: /\\b[a-z][a-z0-9-]*(?=[ .#{\\n])/ },
-        ],
-      };
-    });
-  </script>
   <style>
     body { font-family: 'Inter', system-ui, sans-serif; }
     code, pre, .font-mono, textarea { font-family: 'JetBrains Mono', ui-monospace, monospace; }
     iframe { display: block; }
-    pre { background: #282c34 !important; }
-    code.hljs { background: #282c34; color: #abb2bf; padding: 0; }
-    pre.hljs  { color: #abb2bf; border-radius: 0.75rem; }
   </style>
 </head>`;
 }
@@ -123,8 +175,8 @@ function syntaxCard(title, src, vars = {}) {
       <button class="card-tab card-tab-preview text-xs font-mono px-2 py-0.5 rounded text-zinc-400">preview</button>
     </div>
   </div>
-  <div class="source-pane overflow-x-auto" style="min-height:116px">
-    <pre style="margin:0;padding:14px 16px"><code class="hljs language-4l text-xs font-mono leading-relaxed">${esc(src.trim())}</code></pre>
+  <div class="source-pane overflow-x-auto bg-zinc-950" style="min-height:116px">
+    <pre style="margin:0;padding:14px 16px;color:#d1d5db;font-size:.75rem;line-height:1.6;font-family:inherit">${highlight4l(src.trim())}</pre>
   </div>
   <div class="preview-pane hidden p-3" style="min-height:116px">
     <iframe class="w-full rounded border-0 bg-slate-50" style="height:92px" srcdoc="${srcdoc}" scrolling="no"></iframe>
@@ -222,8 +274,7 @@ function runHero() {
   if (!heroShowOutput) return;
   try {
     heroOutput.textContent = generate(parse(heroInput.value), new HtmlGenerator({ vars: DEFAULT_VARS }));
-    heroOutput.className = 'font-mono text-xs p-4 whitespace-pre-wrap overflow-auto max-h-48 language-html';
-    hljs.highlightElement(heroOutput);
+    heroOutput.className = 'text-emerald-400 font-mono text-xs p-4 whitespace-pre-wrap overflow-auto max-h-48';
   } catch (e) {
     heroOutput.className = 'text-red-400 font-mono text-xs p-4 whitespace-pre-wrap overflow-auto max-h-48';
     heroOutput.textContent = e instanceof ParseError
@@ -268,8 +319,6 @@ const tabs   = document.querySelectorAll('#format-tabs .tab-btn');
 const exBtns = document.querySelectorAll('.example-btn');
 let format = 'html';
 
-const FORMAT_LANG = { html: 'html', react: 'jsx', vue: 'html', astro: 'html' };
-
 function runEditor() {
   try {
     const ast = parse(editorInput.value);
@@ -280,19 +329,20 @@ function runEditor() {
       editorPreview.classList.remove('hidden');
     } else {
       const gens = {
-        html:  new HtmlGenerator(),
+        html:  new HtmlGenerator({ vars: DEFAULT_VARS }),
         react: new ReactGenerator(),
         vue:   new VueGenerator(),
         astro: new AstroGenerator({ fragment: false }),
       };
       editorOutput.textContent = generate(ast, gens[format]);
-      editorOutput.className = \`font-mono text-sm p-4 whitespace-pre-wrap language-\${FORMAT_LANG[format] || 'html'}\`;
+      editorOutput.className = 'text-emerald-400 font-mono text-sm p-4 whitespace-pre-wrap';
+      editorOutput.classList.remove('hidden');
       editorPreview.classList.add('hidden');
-      hljs.highlightElement(editorOutput);
     }
   } catch (e) {
     editorPreview.classList.add('hidden');
     editorOutput.className = 'text-red-400 font-mono text-sm p-4 whitespace-pre-wrap';
+    editorOutput.classList.remove('hidden');
     editorOutput.textContent = e instanceof ParseError
       ? e.errors.map(r => \`line \${r.line}:\${r.col} — \${r.message}\`).join('\\n')
       : String(e);
@@ -349,7 +399,6 @@ writeFileSync(resolve(root, 'docs/index.html'),
 <body class="bg-zinc-950 text-zinc-100 min-h-screen">
 ${indexFinal}
 ${LANDING_SCRIPT}
-<script>hljs.highlightAll();</script>
 </body>
 </html>`,
 );
@@ -418,9 +467,11 @@ function renderMarkdown(src) {
   const codeBlocks = [];
   src = src.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const i = codeBlocks.length;
-    const langClass = `language-${lang || '4l'}`;
+    const inner = lang === '' || lang === '4l'
+      ? highlight4l(code.trim())
+      : `<span style="color:#6ee7b7">${esc(code.trim())}</span>`; // emerald-300 for ts/js/bash/html
     codeBlocks.push(
-      `<pre class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 overflow-x-auto my-5"><code class="hljs ${langClass} text-sm font-mono leading-relaxed">${esc(code.trim())}</code></pre>`,
+      `<pre class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 overflow-x-auto my-5" style="font-size:.85rem;line-height:1.6;font-family:inherit">${inner}</pre>`,
     );
     return `\x00CODE${i}\x00`;
   });
@@ -503,7 +554,6 @@ ${navHtml}
 </div>
 ${footerHtml}
 ${SIDEBAR_ACTIVE_SCRIPT}
-<script>hljs.highlightAll();</script>
 </body>
 </html>`;
 
