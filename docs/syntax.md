@@ -56,20 +56,49 @@ Attribute values must be quoted strings. Boolean attributes use the string `"tru
 
 ### Variable interpolation in attributes
 
-Embed `$variable` references directly inside attribute value strings:
+Embed `$variable` references inside attribute value strings, or use a bare `$var` as the entire value:
 
 ```
-a "Profile" href:"/users/$username"
-img src:"/avatars/$userId.png" alt:$name
+a "Read post" href:"/posts/$slug"
+img src:"/avatars/$userId.jpg" alt:$username
+a $label href:"/$lang/docs/$page"
 ```
 
 ```ts
-compile(src, { username: 'alice', userId: '42', name: 'Alice' });
-// → <a href="/users/alice">Profile</a>
-// → <img src="/avatars/42.png" alt="Alice"/>
+compile(src, { slug: 'hello-world', userId: '42', username: 'Alice', lang: 'en', label: 'Docs', page: 'intro' });
+// → <a href="/posts/hello-world">Read post</a>
+// → <img src="/avatars/42.jpg" alt="Alice"/>
+// → <a href="/en/docs/intro">Docs</a>
 ```
 
-Each generator outputs the appropriate form: static attribute for plain strings, dynamic binding (`:attr`, template literal, JSX expression) when variables are present.
+Unresolved variables render as `{{varName}}` in HTML (same as text variables).
+
+**Output per generator:**
+
+| Source | HTML | React | Vue | Astro |
+| --- | --- | --- | --- | --- |
+| `href:"/p/$slug"` | `/p/value` | `` href: `/p/${slug}` `` | `:href="\`/p/${slug}\`"` | `href={\`/p/${slug}\`}` |
+| `href:$url` | `value` | `` href: `${url}` `` | `:href="\`${url}\`"` | `href={\`${url}\`}` |
+| `href:"/home"` | `/home` | `href: "/home"` | `href="/home"` | `href="/home"` |
+
+Variables also work inside component props and loop bodies:
+
+```
+component NavLink {
+  a $label href:"/$path"
+}
+
+NavLink label:"Home" path:"home"
+NavLink label:"Docs" path:"docs"
+```
+
+```
+ul {
+  for post in posts: li {
+    a $post href:"/posts/$post"
+  }
+}
+```
 
 ## Children
 

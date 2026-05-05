@@ -222,8 +222,8 @@ const syntaxCards = [
     `if admin: p "Admin panel"\nelse: p "Public only"`,
     { admin: false }),
   syntaxCard('Attr interpolation',
-    `a "Profile" href:"/u/$user"\nimg src:"/avatars/$user.png" alt:$user`,
-    { user: 'alice' }),
+    `component UserCard {\n  div.card {\n    img src:"/avatars/$id.jpg" alt:$name\n    a $name href:"/users/$id"\n  }\n}\n\nUserCard id:"42" name:"Alice"\nUserCard id:"99" name:"Bob"`,
+    {}),
   syntaxCard('Components',
     `component Badge { span.badge $label }\n\nBadge label:"stable"\nBadge label:"v2.0"`),
 ].join('\n');
