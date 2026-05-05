@@ -6,12 +6,14 @@ const HELP = `
 Usage: 4less [options] [file]
 
 Options:
+  -e, --eval <code>     compile inline 4less code and print to stdout
   -o, --output <file>   write output to a file instead of stdout
   -w, --watch           watch the input file and recompile on changes
   --format <type>       output format: html (default) or json
   -h, --help            show this message
 
 Examples:
+  4less -e 'h1 "Hello"'
   echo 'h1 "Hello"' | 4less
   4less page.4l
   4less page.4l -o page.html
@@ -22,10 +24,11 @@ Examples:
 function main(): void {
   const { values, positionals } = parseArgs({
     options: {
-      output: { type: 'string', short: 'o' },
-      watch: { type: 'boolean', short: 'w', default: false },
-      format: { type: 'string', default: 'html' },
-      help: { type: 'boolean', short: 'h', default: false },
+      eval:   { type: 'string',  short: 'e' },
+      output: { type: 'string',  short: 'o' },
+      watch:  { type: 'boolean', short: 'w', default: false },
+      format: { type: 'string',  default: 'html' },
+      help:   { type: 'boolean', short: 'h', default: false },
     },
     allowPositionals: true,
   });
@@ -61,6 +64,15 @@ function main(): void {
     } else {
       process.stdout.write(output);
     }
+  }
+
+  if (values.eval !== undefined) {
+    if (values.watch) {
+      process.stderr.write('--watch cannot be used with --eval\n');
+      process.exit(1);
+    }
+    writeOutput(doCompile(values.eval));
+    return;
   }
 
   const file = positionals[0];
