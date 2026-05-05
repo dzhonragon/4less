@@ -230,8 +230,12 @@ class Parser {
     ) {
       const key = this.consume('ID').value!;
       this.consume('COLON');
-      const raw = this.consume('STRING').value!;
-      attributes[key] = parseAttrValue(raw);
+      if (this.peek().type === 'VAR') {
+        attributes[key] = [{ kind: 'var', name: this.consume('VAR').value! }];
+      } else {
+        const raw = this.consume('STRING').value!;
+        attributes[key] = parseAttrValue(raw);
+      }
     }
 
     const children: AstNode[] = [];

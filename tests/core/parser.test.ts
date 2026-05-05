@@ -59,7 +59,7 @@ describe('buildAst', () => {
     });
   });
 
-  it('parses attribute value with $var interpolation', () => {
+  it('parses attribute value with $var interpolation inside string', () => {
     const tokens = tokenize('a href:"/posts/$slug"');
     const ast = buildAst(tokens);
     expect(ast[0]).toMatchObject({
@@ -67,6 +67,15 @@ describe('buildAst', () => {
       attributes: {
         href: [{ kind: 'literal', value: '/posts/' }, { kind: 'var', name: 'slug' }],
       },
+    });
+  });
+
+  it('parses bare $var as attribute value', () => {
+    const tokens = tokenize('img alt:$caption');
+    const ast = buildAst(tokens);
+    expect(ast[0]).toMatchObject({
+      tag: 'img',
+      attributes: { alt: [{ kind: 'var', name: 'caption' }] },
     });
   });
 
