@@ -28,19 +28,38 @@ export class VueGenerator extends BaseGenerator {
   }
 
   private renderCond(node: CondNode): string {
-    // When the body is a plain element, add v-if directly to it
-    if (node.body.type === 'element') {
-      const el = node.body;
-      const attrs = this.buildAttrs(el);
-      const vIf = `v-if="${node.condition}"`;
-      const attrsStr = attrs ? ` ${attrs} ${vIf}` : ` ${vIf}`;
-      const isVoid = VOID_ELEMENTS.has(el.tag);
-      const content = this.renderBodyContent(el);
-      if (!content && isVoid) return `<${el.tag}${attrsStr}/>`;
-      return `<${el.tag}${attrsStr}>${content}</${el.tag}>`;
+    const vCond = node.negate ? `!${node.condition}` : node.condition;
+
+    if (!node.elseBody) {
+      // No else: put v-if directly on element when possible, template otherwise
+      if (node.body.type === 'element') {
+        const el = node.body;
+        const attrs = this.buildAttrs(el);
+        const vIf = `v-if="${vCond}"`;
+        const attrsStr = attrs ? ` ${attrs} ${vIf}` : ` ${vIf}`;
+        const isVoid = VOID_ELEMENTS.has(el.tag);
+        const content = this.renderBodyContent(el);
+        if (!content && isVoid) return `<${el.tag}${attrsStr}/>`;
+        return `<${el.tag}${attrsStr}>${content}</${el.tag}>`;
+      }
+      return `<template v-if="${vCond}">${this.renderNode(node.body)}</template>`;
     }
-    // For loop/cond body: wrap in <template v-if>
-    return `<template v-if="${node.condition}">${this.renderNode(node.body)}</template>`;
+
+    // Has else/else-if: use <template v-if> + siblings
+    const ifPart = `<template v-if="${vCond}">${this.renderNode(node.body)}</template>`;
+    return ifPart + this.renderElseBranch(node.elseBody);
+  }
+
+  /** Renders the else/else-if branch using v-else-if or v-else. */
+  private renderElseBranch(node: AstNode): string {
+    if (node.type === 'cond') {
+      const vCond = node.negate ? `!${node.condition}` : node.condition;
+      const content = this.renderNode(node.body);
+      const part = `<template v-else-if="${vCond}">${content}</template>`;
+      if (node.elseBody) return part + this.renderElseBranch(node.elseBody);
+      return part;
+    }
+    return `<template v-else>${this.renderNode(node)}</template>`;
   }
 
   private renderBodyContent(node: ElementNode): string {
@@ -74,14 +93,29 @@ export class VueGenerator extends BaseGenerator {
     ).join('');
   }
 
+  /** Renders attribute TextSegment[] as static or dynamic (:attr) Vue binding. */
+  private renderAttrPart(key: string, segments: TextSegment[]): string {
+    const allLiteral = segments.every(s => s.kind === 'literal');
+    if (allLiteral) {
+      const value = segments.map(s => this.escapeAttr((s as { kind: 'literal'; value: string }).value)).join('');
+      return `${key}="${value}"`;
+    }
+    const expr = segments.map(seg =>
+      seg.kind === 'literal'
+        ? seg.value.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')
+        : `\${${seg.name}}`
+    ).join('');
+    return `:${key}="\`${expr}\`"`;
+  }
+
   private buildAttrs(node: ElementNode): string {
     const parts: string[] = [];
     if (node.id) parts.push(`id="${this.escapeAttr(node.id)}"`);
     if (node.classes.length > 0) {
       parts.push(`class="${node.classes.map(c => this.escapeAttr(c)).join(' ')}"`);
     }
-    for (const [key, value] of Object.entries(node.attributes)) {
-      parts.push(`${key}="${this.escapeAttr(value)}"`);
+    for (const [key, segs] of Object.entries(node.attributes)) {
+      parts.push(this.renderAttrPart(key, segs));
     }
     return parts.join(' ');
   }

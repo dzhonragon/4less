@@ -1,6 +1,14 @@
-import { compile, parse, generate, HtmlGenerator, JsonGenerator, ParseError } from './index.js';
+import {
+  compile, parse, generate,
+  HtmlGenerator, ReactGenerator, VueGenerator, AstroGenerator, JsonGenerator,
+  ParseError,
+} from './index.js';
 import { readFileSync, writeFileSync, watch } from 'fs';
 import { parseArgs } from 'node:util';
+import { createRequire } from 'node:module';
+
+const _require = createRequire(import.meta.url);
+const PKG_VERSION: string = _require('../package.json').version as string;
 
 const HELP = `
 Usage: 4less [options] [file]
@@ -9,7 +17,8 @@ Options:
   -e, --eval <code>     compile inline 4less code and print to stdout
   -o, --output <file>   write output to a file instead of stdout
   -w, --watch           watch the input file and recompile on changes
-  --format <type>       output format: html (default) or json
+  -f, --format <type>   output format: html (default), react, vue, astro, json
+  -v, --version         print version and exit
   -h, --help            show this message
 
 Examples:
@@ -18,17 +27,21 @@ Examples:
   4less page.4l
   4less page.4l -o page.html
   4less page.4l -o page.html --watch
+  4less page.4l --format react --output Page.jsx
+  4less page.4l --format vue   --output Page.vue
+  4less page.4l --format astro --output Page.astro
   4less page.4l --format json
 `.trim();
 
 function main(): void {
   const { values, positionals } = parseArgs({
     options: {
-      eval:   { type: 'string',  short: 'e' },
-      output: { type: 'string',  short: 'o' },
-      watch:  { type: 'boolean', short: 'w', default: false },
-      format: { type: 'string',  default: 'html' },
-      help:   { type: 'boolean', short: 'h', default: false },
+      eval:    { type: 'string',  short: 'e' },
+      output:  { type: 'string',  short: 'o' },
+      watch:   { type: 'boolean', short: 'w', default: false },
+      format:  { type: 'string',  short: 'f', default: 'html' },
+      version: { type: 'boolean', short: 'v', default: false },
+      help:    { type: 'boolean', short: 'h', default: false },
     },
     allowPositionals: true,
   });
@@ -38,15 +51,23 @@ function main(): void {
     process.exit(0);
   }
 
+  if (values.version) {
+    process.stdout.write(`${PKG_VERSION}\n`);
+    process.exit(0);
+  }
+
   function doCompile(input: string): string {
     try {
-      if (values.format === 'json') {
-        const ast = parse(input);
-        return generate(ast, new JsonGenerator());
-      } else if (values.format === 'html') {
-        return compile(input);
-      } else {
-        throw new Error(`unknown format: ${values.format}`);
+      const ast = parse(input);
+      switch (values.format) {
+        case 'html':  return generate(ast, new HtmlGenerator());
+        case 'react': return generate(ast, new ReactGenerator());
+        case 'vue':   return generate(ast, new VueGenerator());
+        case 'astro': return generate(ast, new AstroGenerator());
+        case 'json':  return generate(ast, new JsonGenerator());
+        default:
+          process.stderr.write(`unknown format: ${values.format}\n`);
+          process.exit(1);
       }
     } catch (err) {
       if (err instanceof ParseError) {

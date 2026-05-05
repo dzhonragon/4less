@@ -4,6 +4,7 @@ export type TokenType =
   | 'VAR'
   | 'DOT'
   | 'HASH'
+  | 'BANG'
   | 'COLON'
   | 'LBRACE'
   | 'RBRACE'
@@ -48,8 +49,10 @@ export interface LoopNode {
 
 export interface CondNode {
   type: 'cond';
+  negate: boolean;
   condition: string;
   body: AstNode;
+  elseBody: AstNode | null;
 }
 
 export interface ElementNode {
@@ -57,7 +60,8 @@ export interface ElementNode {
   tag: string;
   id: string | null;
   classes: string[];
-  attributes: Record<string, string>;
+  /** Attribute values are TextSegment[] to support $var interpolation inside strings. */
+  attributes: Record<string, TextSegment[]>;
   text: TextSegment[] | null;
   children: AstNode[];
 }

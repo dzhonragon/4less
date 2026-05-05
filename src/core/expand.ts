@@ -1,4 +1,4 @@
-import type { AstNode, ElementNode, TextSegment } from './types.js';
+import type { AstNode, CondNode, ElementNode, TextSegment } from './types.js';
 import { ParseError } from '../errors.js';
 
 type Registry = Map<string, AstNode[]>;
@@ -42,8 +42,19 @@ function expandNode(
     case 'cond': {
       const expanded = expandNode(node.body, registry, props, expanding);
       if (expanded.length === 0) return [];
-      if (expanded.length === 1) return [{ ...node, body: expanded[0] }];
-      throw new ParseError([{ line: 0, col: 0, message: `component in conditional must expand to a single root element` }]);
+      if (expanded.length !== 1) {
+        throw new ParseError([{ line: 0, col: 0, message: `component in conditional must expand to a single root element` }]);
+      }
+      let elseBody: AstNode | null = null;
+      if (node.elseBody !== null) {
+        const expandedElse = expandNode(node.elseBody, registry, props, expanding);
+        if (expandedElse.length === 1) {
+          elseBody = expandedElse[0];
+        } else if (expandedElse.length > 1) {
+          throw new ParseError([{ line: 0, col: 0, message: `component in else-branch must expand to a single root element` }]);
+        }
+      }
+      return [{ ...node, body: expanded[0], elseBody }];
     }
 
     case 'element':
@@ -59,12 +70,15 @@ function expandElementNode(
 ): ElementNode {
   return {
     ...node,
-    text: node.text ? substituteProps(node.text, props) : null,
+    text: node.text ? substituteSegments(node.text, props) : null,
+    attributes: Object.fromEntries(
+      Object.entries(node.attributes).map(([k, segs]) => [k, substituteSegments(segs, props)])
+    ),
     children: node.children.flatMap(c => expandNode(c, registry, props, expanding)),
   };
 }
 
-function substituteProps(segments: TextSegment[], props: Record<string, string>): TextSegment[] {
+function substituteSegments(segments: TextSegment[], props: Record<string, string>): TextSegment[] {
   return segments.map(seg =>
     seg.kind === 'var' && seg.name in props
       ? { kind: 'literal', value: props[seg.name] }

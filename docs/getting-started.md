@@ -62,18 +62,24 @@ const html = compile('h1 "Hello"');
 Pass variables at compile time:
 
 ```ts
-const html = compile('p $name', { vars: { name: 'Alice' } });
+const html = compile('p $name', { name: 'Alice' });
 // → <p>Alice</p>
 ```
 
-Arrays are used by loops:
+Arrays are used by loops, booleans by conditionals:
 
 ```ts
 const html = compile(
   'ul { for item in stack: li $item }',
-  { vars: { stack: ['TypeScript', 'React', 'Tailwind'] } }
+  { stack: ['TypeScript', 'React', 'Tailwind'] }
 );
 // → <ul><li>TypeScript</li><li>React</li><li>Tailwind</li></ul>
+
+const html2 = compile(
+  'if isAdmin: p "Admin" else: p "User"',
+  { isAdmin: true }
+);
+// → <p>Admin</p>
 ```
 
 ## TypeScript Setup
@@ -82,7 +88,7 @@ const html = compile(
 
 ```ts
 import { compile, parse, generate, HtmlGenerator, ParseError } from '@dzhonragon/4less';
-import type { AstNode, CompileOptions } from '@dzhonragon/4less';
+import type { AstNode, VarsMap } from '@dzhonragon/4less';
 ```
 
 ## Next Steps

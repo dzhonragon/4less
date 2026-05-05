@@ -21,22 +21,29 @@ npx 4less --help
 ## Synopsis
 
 ```
-4less [options] <file>
+4less [options] [file]
 ```
 
 ## Options
 
 | Flag | Short | Description |
 | --- | --- | --- |
-| `--format <name>` | `-f` | Output format: `html` (default), `react`, `vue`, `astro` |
+| `--eval <code>` | `-e` | Compile inline 4less code and print to stdout |
+| `--output <file>` | `-o` | Write output to a file instead of stdout |
 | `--watch` | `-w` | Watch file for changes and recompile on save |
-| `--out <file>` | `-o` | Write output to a file instead of stdout |
-| `--help` | `-h` | Show help and exit |
+| `--format <name>` | `-f` | Output format: `html` (default), `react`, `vue`, `astro`, `json` |
 | `--version` | `-v` | Print version and exit |
+| `--help` | `-h` | Show help and exit |
 
 ## Examples
 
-Compile to HTML and print to stdout:
+Compile inline code and print to stdout:
+
+```bash
+4less -e 'h1 "Hello, world"'
+```
+
+Compile a file to HTML (default):
 
 ```bash
 4less template.4l
@@ -45,31 +52,43 @@ Compile to HTML and print to stdout:
 Compile to React and write to a file:
 
 ```bash
-4less template.4l --format react --out src/Template.jsx
+4less template.4l --format react --output src/Template.jsx
 ```
 
 Compile to Vue:
 
 ```bash
-4less template.4l --format vue --out src/Template.vue
+4less template.4l --format vue --output src/Template.vue
 ```
 
 Compile to Astro:
 
 ```bash
-4less template.4l --format astro --out src/Template.astro
+4less template.4l --format astro --output src/Template.astro
+```
+
+Compile to JSON (AST representation):
+
+```bash
+4less template.4l --format json
 ```
 
 Watch mode — recompiles every time the file is saved:
 
 ```bash
-4less template.4l --watch
+4less src/page.4l --output dist/page.html --watch
 ```
 
-Combine output file with watch:
+Combine output file with watch and a specific format:
 
 ```bash
-4less src/page.4l --format react --out src/Page.jsx --watch
+4less src/page.4l --format react --output src/Page.jsx --watch
+```
+
+Print from stdin:
+
+```bash
+echo 'h1 "Hello"' | 4less
 ```
 
 ## Exit Codes
@@ -77,5 +96,4 @@ Combine output file with watch:
 | Code | Meaning |
 | --- | --- |
 | `0` | Compilation succeeded |
-| `1` | Parse error — details printed to stderr |
-| `2` | File not found or unreadable |
+| `1` | Parse error or invalid flag — details printed to stderr |

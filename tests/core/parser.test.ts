@@ -47,13 +47,58 @@ describe('buildAst', () => {
     });
   });
 
-  it('parses attributes', () => {
+  it('parses attributes as TextSegment arrays', () => {
     const tokens = tokenize('a href:"/" target:"_blank"');
     const ast = buildAst(tokens);
     expect(ast[0]).toMatchObject({
       tag: 'a',
-      attributes: { href: '/', target: '_blank' },
+      attributes: {
+        href:   [{ kind: 'literal', value: '/' }],
+        target: [{ kind: 'literal', value: '_blank' }],
+      },
     });
+  });
+
+  it('parses attribute value with $var interpolation', () => {
+    const tokens = tokenize('a href:"/posts/$slug"');
+    const ast = buildAst(tokens);
+    expect(ast[0]).toMatchObject({
+      tag: 'a',
+      attributes: {
+        href: [{ kind: 'literal', value: '/posts/' }, { kind: 'var', name: 'slug' }],
+      },
+    });
+  });
+
+  it('parses negated conditional', () => {
+    const tokens = tokenize('if !isHidden: p "Visible"');
+    const ast = buildAst(tokens);
+    expect(ast[0]).toMatchObject({ type: 'cond', negate: true, condition: 'isHidden' });
+  });
+
+  it('parses else branch', () => {
+    const tokens = tokenize('if show: p "yes" else: p "no"');
+    const ast = buildAst(tokens);
+    const cond = ast[0] as import('../../src/core/types.js').CondNode;
+    expect(cond.condition).toBe('show');
+    expect(cond.body).toMatchObject({ tag: 'p', text: [{ kind: 'literal', value: 'yes' }] });
+    expect(cond.elseBody).toMatchObject({ tag: 'p', text: [{ kind: 'literal', value: 'no' }] });
+  });
+
+  it('parses else-if chain', () => {
+    const tokens = tokenize('if a: p "a" else-if b: p "b" else: p "c"');
+    const ast = buildAst(tokens);
+    const cond = ast[0] as import('../../src/core/types.js').CondNode;
+    expect(cond.condition).toBe('a');
+    const elseIf = cond.elseBody as import('../../src/core/types.js').CondNode;
+    expect(elseIf.type).toBe('cond');
+    expect(elseIf.condition).toBe('b');
+    expect(elseIf.elseBody).toMatchObject({ tag: 'p' });
+  });
+
+  it('throws when bare else appears without if', () => {
+    const tokens = tokenize('else: p "x"');
+    expect(() => buildAst(tokens)).toThrow(ParseError);
   });
 
   it('parses nested elements', () => {

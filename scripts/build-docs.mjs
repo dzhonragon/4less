@@ -49,7 +49,7 @@ function compileFile(relPath) {
 
 // ── 3b. Custom 4less syntax highlighter (site-palette colors) ────────────
 // Character-by-character tokenizer avoids regex re-processing own output.
-const KEYWORDS = new Set(['for', 'in', 'if', 'component']);
+const KEYWORDS = new Set(['for', 'in', 'if', 'else', 'else-if', 'component']);
 function highlight4l(src) {
   const out = [];
   let i = 0;
@@ -108,6 +108,9 @@ function highlight4l(src) {
       }
       continue;
     }
+
+    // Negation operator
+    if (ch === '!') { eat(); out.push(`<span style="color:#818cf8">!</span>`); continue; }
 
     // HTML special chars
     if (ch === '<') { eat(); out.push('&lt;'); continue; }
@@ -216,12 +219,13 @@ const syntaxCards = [
     `ul {\n  for item in stack: li $item\n}`,
     { stack: ['TypeScript', 'React', 'Tailwind'] }),
   syntaxCard('Conditionals',
-    `div {\n  if admin: p "Admin panel visible"\n  p "Public content"\n}`,
-    { admin: true }),
+    `if admin: p "Admin panel"\nelse: p "Public only"`,
+    { admin: false }),
+  syntaxCard('Attr interpolation',
+    `a "Profile" href:"/u/$user"\nimg src:"/avatars/$user.png" alt:$user`,
+    { user: 'alice' }),
   syntaxCard('Components',
     `component Badge { span.badge $label }\n\nBadge label:"stable"\nBadge label:"v2.0"`),
-  syntaxCard('Forms',
-    `form {\n  label "Email"\n  input type:"email" placeholder:"you@example.com"\n  button.btn "Subscribe"\n}`),
 ].join('\n');
 
 // ── 6. Landing page editor examples & scripts ────────────────────────────
@@ -467,8 +471,8 @@ const guideCards = GUIDE_PAGES.map(({ slug, fallbackTitle }) => {
 }).join('\n        ');
 
 const guideFinal = guideBody.replace(
-  '<div class="grid grid-cols-2 gap-4" id="__guide-cards__"></div>',
-  `<div class="grid grid-cols-2 gap-4">\n        ${guideCards}\n      </div>`,
+  /(<div[^>]+\bid="__guide-cards__"[^>]*>)<\/div>/,
+  `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">\n        ${guideCards}\n      </div>`,
 );
 
 mkdirSync(resolve(root, 'docs/pages/guide'), { recursive: true });

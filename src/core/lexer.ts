@@ -11,6 +11,7 @@ const TOKEN_PATTERNS: TokenPattern[] = [
   { type: 'VAR', re: /^\$([a-zA-Z_][a-zA-Z0-9_]*)/ },
   { type: 'DOT', re: /^\./ },
   { type: 'HASH', re: /^#/ },
+  { type: 'BANG', re: /^!/ },
   { type: 'COLON', re: /^:/ },
   { type: 'LBRACE', re: /^\{/ },
   { type: 'RBRACE', re: /^\}/ },

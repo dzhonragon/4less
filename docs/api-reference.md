@@ -11,23 +11,15 @@ The highest-level entry point. Parses a 4less string, expands components, and em
 ```ts
 import { compile } from '@dzhonragon/4less';
 
-compile(source: string, options?: CompileOptions): string
+compile(source: string, vars?: VarsMap): string
 ```
 
-**Options:**
-
-```ts
-interface CompileOptions {
-  vars?: Record<string, string | string[]>;
-}
-```
-
-**Example:**
+`VarsMap` is `Record<string, string | string[] | boolean>`. Pass it directly as the second argument:
 
 ```ts
 const html = compile(
   `ul { for item in stack: li $item }`,
-  { vars: { stack: ['TypeScript', 'React'] } }
+  { stack: ['TypeScript', 'React'] }
 );
 // → <ul><li>TypeScript</li><li>React</li></ul>
 ```
@@ -42,17 +34,15 @@ import { parse } from '@dzhonragon/4less';
 parse(source: string): AstNode[]
 ```
 
-Returns an array of `AstNode` (element nodes, loop nodes, conditional nodes, component definitions, and component calls). Throws `ParseError` on invalid syntax.
-
-**Example:**
+Returns an array of `AstNode`. Throws `ParseError` on invalid syntax.
 
 ```ts
 const ast = parse(`
   component Badge { span.badge $label }
   Badge label:"stable"
 `);
-// ast[0].type === 'component-def'
-// ast[1].type === 'component-call'
+// ast[0].type === 'component_def'
+// ast[1].type === 'component_call'
 ```
 
 ## generate()
@@ -64,8 +54,6 @@ import { parse, generate, HtmlGenerator } from '@dzhonragon/4less';
 
 generate(ast: AstNode[], generator: BaseGenerator): string
 ```
-
-**Example:**
 
 ```ts
 const ast  = parse(`div { h1 "Hello" p "World" }`);
@@ -92,11 +80,11 @@ import {
 Renders to plain HTML strings. Used by `compile()` internally.
 
 ```ts
-new HtmlGenerator(options?: { vars?: Record<string, string | string[]> })
+new HtmlGenerator(options?: { vars?: VarsMap })
 ```
 
 ```ts
-generate(ast, new HtmlGenerator({ vars: { name: 'Alice' } }));
+generate(ast, new HtmlGenerator({ vars: { name: 'Alice', admin: true } }));
 ```
 
 ### ReactGenerator
@@ -112,9 +100,16 @@ generate(parse(`if show: p $msg`), new ReactGenerator());
 // → show ? React.createElement('p', null, msg) : null
 ```
 
+Dynamic attributes emit template literals:
+
+```ts
+generate(parse(`a "Go" href:"/posts/$slug"`), new ReactGenerator());
+// → React.createElement('a', { href: `/posts/${slug}` }, "Go")
+```
+
 ### VueGenerator
 
-Renders to Vue template syntax with `v-for` and `v-if` directives.
+Renders to Vue template syntax with `v-for`, `v-if`, `v-else-if`, and `v-else` directives.
 
 ```ts
 new VueGenerator()
@@ -123,6 +118,13 @@ new VueGenerator()
 ```ts
 generate(parse(`ul { for item in list: li $item }`), new VueGenerator());
 // → <ul><li v-for="item in list" :key="item">{{ item }}</li></ul>
+```
+
+Dynamic attributes use `:attr` bindings:
+
+```ts
+generate(parse(`a "Go" href:"/posts/$slug"`), new VueGenerator());
+// → <a :href="`/posts/${slug}`">Go</a>
 ```
 
 ### AstroGenerator
@@ -139,6 +141,16 @@ new AstroGenerator(options?: {
 ```ts
 generate(parse(`if show: p $msg`), new AstroGenerator());
 // → {show && <p>{msg}</p>}
+
+generate(parse(`if show: p "yes" else: p "no"`), new AstroGenerator());
+// → {show ? <p>yes</p> : <p>no</p>}
+```
+
+Dynamic attributes emit JSX template literals:
+
+```ts
+generate(parse(`a "Go" href:"/posts/$slug"`), new AstroGenerator());
+// → <a href={`/posts/${slug}`}>Go</a>
 ```
 
 ### JsonGenerator
@@ -182,14 +194,14 @@ try {
 **Error shape:**
 
 ```ts
-interface ParseErrorRecord {
+interface ErrorLocation {
   line:    number;
   col:     number;
   message: string;
 }
 
 class ParseError extends Error {
-  errors: ParseErrorRecord[];
+  errors: ErrorLocation[];
 }
 ```
 
@@ -199,10 +211,39 @@ The AST uses a discriminated union on the `type` field:
 
 ```ts
 type AstNode =
-  | ElementNode       // type: 'element'
-  | LoopNode          // type: 'loop'
-  | CondNode          // type: 'cond'
-  | ComponentDef      // type: 'component-def'
-  | ComponentCall     // type: 'component-call'
-  | TextSegment;      // type: 'text'
+  | ElementNode        // type: 'element'
+  | LoopNode           // type: 'loop'
+  | CondNode           // type: 'cond'
+  | ComponentDefNode   // type: 'component_def'
+  | ComponentCallNode  // type: 'component_call'
+```
+
+**CondNode** — includes negation and optional else branch:
+
+```ts
+interface CondNode {
+  type:     'cond';
+  negate:   boolean;       // true for `if !condition:`
+  condition: string;
+  body:     AstNode;
+  elseBody: AstNode | null; // set when `else:` or `else-if` follows
+}
+```
+
+**ElementNode** — attribute values are `TextSegment[]` to support `$var` interpolation:
+
+```ts
+interface ElementNode {
+  type:       'element';
+  tag:        string;
+  id:         string | null;
+  classes:    string[];
+  attributes: Record<string, TextSegment[]>;
+  text:       TextSegment[] | null;
+  children:   AstNode[];
+}
+
+type TextSegment =
+  | { kind: 'literal'; value: string }
+  | { kind: 'var';     name: string  };
 ```

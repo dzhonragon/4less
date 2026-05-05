@@ -1,5 +1,5 @@
 import { BaseGenerator } from './base.js';
-import type { AstNode, CondNode, ElementNode, LoopNode, TextSegment, VarsMap } from '../core/types.js';
+import type { AstNode, CondNode, ElementNode, LoopNode, TextSegment, VarValue, VarsMap } from '../core/types.js';
 
 const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -42,10 +42,20 @@ export class HtmlGenerator extends BaseGenerator {
     }).join('');
   }
 
+  private isTruthy(val: VarValue | undefined): boolean {
+    if (val === undefined || val === null) return false;
+    if (typeof val === 'boolean') return val;
+    if (typeof val === 'string') return val !== '' && val !== 'false' && val !== '0';
+    if (Array.isArray(val)) return val.length > 0;
+    return false;
+  }
+
   private renderCond(node: CondNode): string {
     const val = this.localVars[node.condition] ?? this.vars[node.condition];
-    if (!val) return '';
-    return this.renderNode(node.body);
+    const condMet = node.negate ? !this.isTruthy(val) : this.isTruthy(val);
+    if (condMet) return this.renderNode(node.body);
+    if (node.elseBody != null) return this.renderNode(node.elseBody);
+    return '';
   }
 
   private renderElement(node: ElementNode): string {
@@ -75,14 +85,23 @@ export class HtmlGenerator extends BaseGenerator {
     }).join('');
   }
 
+  private renderAttrValue(segments: TextSegment[]): string {
+    return segments.map(seg => {
+      if (seg.kind === 'literal') return this.escapeAttr(seg.value);
+      const val = this.localVars[seg.name] ?? this.vars[seg.name];
+      if (val === undefined || typeof val !== 'string') return `{{${seg.name}}}`;
+      return this.escapeAttr(val);
+    }).join('');
+  }
+
   private buildAttrs(node: ElementNode): string {
     const parts: string[] = [];
     if (node.id) parts.push(`id="${this.escapeAttr(node.id)}"`);
     if (node.classes.length > 0) {
       parts.push(`class="${node.classes.map(c => this.escapeAttr(c)).join(' ')}"`);
     }
-    for (const [key, value] of Object.entries(node.attributes)) {
-      parts.push(`${key}="${this.escapeAttr(value)}"`);
+    for (const [key, segs] of Object.entries(node.attributes)) {
+      parts.push(`${key}="${this.renderAttrValue(segs)}"`);
     }
     return parts.join(' ');
   }

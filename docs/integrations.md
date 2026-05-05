@@ -1,6 +1,6 @@
 ---
 title: Integrations
-description: Use 4less with Vite, Webpack, and esbuild via official plugins.
+description: Use 4less with Vite, Webpack, esbuild, and Rollup via official plugins.
 order: 5
 ---
 
@@ -78,6 +78,25 @@ await esbuild.build({
 ```
 
 The plugin resolves `.4l` imports and converts them to exported HTML strings at build time.
+
+## Rollup
+
+```js
+// rollup.config.js
+import fourless from '@dzhonragon/4less/rollup';
+
+export default {
+  input: 'src/index.js',
+  plugins: [fourless()],
+};
+```
+
+Import `.4l` files as strings:
+
+```js
+import html from './template.4l';
+document.body.innerHTML = html;
+```
 
 ## Browser (no bundler)
 

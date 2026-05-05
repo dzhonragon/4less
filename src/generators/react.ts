@@ -41,8 +41,13 @@ export class ReactGenerator extends BaseGenerator {
   }
 
   private renderCond(node: CondNode): string {
+    const condExpr = node.negate ? `!${node.condition}` : node.condition;
     const bodyExpr = this.renderNode(node.body);
-    return `${node.condition} ? ${bodyExpr} : null`;
+    if (node.elseBody != null) {
+      const elseExpr = this.renderNode(node.elseBody);
+      return `${condExpr} ? ${bodyExpr} : ${elseExpr}`;
+    }
+    return `${condExpr} ? ${bodyExpr} : null`;
   }
 
   private renderElement(node: ElementNode): string {
@@ -68,15 +73,28 @@ export class ReactGenerator extends BaseGenerator {
     );
   }
 
+  /** Renders attribute TextSegment[] as a JS expression (string literal or template literal). */
+  private renderAttrExpr(segments: TextSegment[]): string {
+    if (segments.length === 1 && segments[0].kind === 'literal') {
+      return JSON.stringify(segments[0].value);
+    }
+    const parts = segments.map(seg =>
+      seg.kind === 'literal'
+        ? seg.value.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')
+        : `\${${seg.name}}`
+    ).join('');
+    return `\`${parts}\``;
+  }
+
   private buildProps(node: ElementNode): string {
     const props: string[] = [];
     if (node.id) props.push(`id: ${JSON.stringify(node.id)}`);
     if (node.classes.length > 0) {
       props.push(`className: ${JSON.stringify(node.classes.join(' '))}`);
     }
-    for (const [key, value] of Object.entries(node.attributes)) {
+    for (const [key, segs] of Object.entries(node.attributes)) {
       const reactKey = REACT_PROP_MAP[key] ?? key;
-      props.push(`${reactKey}: ${JSON.stringify(value)}`);
+      props.push(`${reactKey}: ${this.renderAttrExpr(segs)}`);
     }
     if (props.length === 0) return '';
     return `{ ${props.join(', ')} }`;

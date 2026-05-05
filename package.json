@@ -21,6 +21,10 @@
     "./esbuild": {
       "import": "./dist/plugins/esbuild.js",
       "types": "./dist/plugins/esbuild.d.ts"
+    },
+    "./rollup": {
+      "import": "./dist/plugins/rollup.js",
+      "types": "./dist/plugins/rollup.d.ts"
     }
   },
   "files": [

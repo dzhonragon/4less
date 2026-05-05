@@ -3,6 +3,7 @@ import { AstroGenerator } from '../../src/generators/astro.js';
 import type { ElementNode, TextSegment } from '../../src/core/types.js';
 
 const lit = (value: string): TextSegment[] => [{ kind: 'literal', value }];
+const attr = (value: string): TextSegment[] => [{ kind: 'literal', value }];
 
 const el = (tag: string, overrides: Partial<ElementNode> = {}): ElementNode => ({
   type: 'element', tag, id: null, classes: [], attributes: {}, text: null, children: [],
@@ -36,18 +37,18 @@ describe('AstroGenerator', () => {
   it('renders void elements with JSX-style self-closing', () => {
     const gen = new AstroGenerator();
     expect(gen.generate([el('br')])).toBe('<br />');
-    expect(gen.generate([el('meta', { attributes: { charset: 'UTF-8' } })])).toBe('<meta charset="UTF-8" />');
+    expect(gen.generate([el('meta', { attributes: { charset: attr('UTF-8') } })])).toBe('<meta charset="UTF-8" />');
   });
 
-  it('renders non-void empty elements with JSX-style self-closing', () => {
+  it('renders non-void empty elements with closing tag', () => {
     const gen = new AstroGenerator();
-    expect(gen.generate([el('div')])).toBe('<div />');
+    expect(gen.generate([el('div')])).toBe('<div></div>');
   });
 
   it('renders id and class attributes', () => {
     const gen = new AstroGenerator();
     expect(gen.generate([el('div', { id: 'app', classes: ['container'] })])).toBe(
-      '<div id="app" class="container" />'
+      '<div id="app" class="container"></div>'
     );
   });
 
@@ -103,7 +104,7 @@ describe('AstroGenerator', () => {
   it('renders conditional as && expression', () => {
     const gen = new AstroGenerator();
     const cond: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'isVisible',
+      type: 'cond', negate: false, condition: 'isVisible', elseBody: null,
       body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Hello'), children: [] },
     };
     expect(gen.generate([cond])).toBe('{isVisible && <p>Hello</p>}');
@@ -116,7 +117,7 @@ describe('AstroGenerator', () => {
       body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'item' }], children: [] },
     };
     const cond: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'hasItems', body: loop,
+      type: 'cond', negate: false, condition: 'hasItems', elseBody: null, body: loop,
     };
     expect(gen.generate([cond])).toBe('{hasItems && items.map((item) => <li>{item}</li>)}');
   });
@@ -124,12 +125,42 @@ describe('AstroGenerator', () => {
   it('renders nested conditionals', () => {
     const gen = new AstroGenerator();
     const inner: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'b',
+      type: 'cond', negate: false, condition: 'b', elseBody: null,
       body: { type: 'element', tag: 'span', id: null, classes: [], attributes: {}, text: lit('ok'), children: [] },
     };
     const outer: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'a', body: inner,
+      type: 'cond', negate: false, condition: 'a', elseBody: null, body: inner,
     };
     expect(gen.generate([outer])).toBe('{a && (b && <span>ok</span>)}');
+  });
+
+  it('renders negated conditional', () => {
+    const gen = new AstroGenerator();
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', negate: true, condition: 'isHidden', elseBody: null,
+      body: el('p', { text: lit('Visible') }),
+    };
+    expect(gen.generate([cond])).toBe('{!isHidden && <p>Visible</p>}');
+  });
+
+  it('renders if/else as ternary', () => {
+    const gen = new AstroGenerator();
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', negate: false, condition: 'loggedIn',
+      body: el('p', { text: lit('Welcome') }),
+      elseBody: el('p', { text: lit('Log in') }),
+    };
+    expect(gen.generate([cond])).toBe('{loggedIn ? <p>Welcome</p> : <p>Log in</p>}');
+  });
+
+  it('renders dynamic attribute with $var as JSX expression', () => {
+    const gen = new AstroGenerator();
+    const ast = [el('a', {
+      attributes: {
+        href: [{ kind: 'literal', value: '/posts/' }, { kind: 'var', name: 'slug' }],
+      },
+      text: lit('Read'),
+    })];
+    expect(gen.generate(ast)).toBe('<a href={`/posts/${slug}`}>Read</a>');
   });
 });

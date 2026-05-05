@@ -3,6 +3,7 @@ import { ReactGenerator } from '../../src/generators/react.js';
 import type { ElementNode, TextSegment } from '../../src/core/types.js';
 
 const lit = (value: string): TextSegment[] => [{ kind: 'literal', value }];
+const attr = (value: string): TextSegment[] => [{ kind: 'literal', value }];
 
 const el = (tag: string, overrides: Partial<ElementNode> = {}): ElementNode => ({
   type: 'element',
@@ -43,13 +44,13 @@ describe('ReactGenerator', () => {
   });
 
   it('renders attributes', () => {
-    expect(gen.generate([el('a', { attributes: { href: '/' }, text: lit('Home') })])).toBe(
+    expect(gen.generate([el('a', { attributes: { href: attr('/') }, text: lit('Home') })])).toBe(
       `React.createElement('a', { href: "/" }, "Home")`
     );
   });
 
   it('converts html attribute names to React prop names', () => {
-    expect(gen.generate([el('label', { attributes: { for: 'email' } })])).toBe(
+    expect(gen.generate([el('label', { attributes: { for: attr('email') } })])).toBe(
       `React.createElement('label', { htmlFor: "email" })`
     );
   });
@@ -71,7 +72,7 @@ describe('ReactGenerator', () => {
   });
 
   it('combines id, className and attributes', () => {
-    const ast = [el('div', { id: 'app', classes: ['box'], attributes: { role: 'main' } })];
+    const ast = [el('div', { id: 'app', classes: ['box'], attributes: { role: attr('main') } })];
     expect(gen.generate(ast)).toBe(
       `React.createElement('div', { id: "app", className: "box", role: "main" })`
     );
@@ -110,7 +111,7 @@ describe('ReactGenerator', () => {
 
   it('renders conditional as ternary expression', () => {
     const cond: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'isVisible',
+      type: 'cond', negate: false, condition: 'isVisible', elseBody: null,
       body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Hello'), children: [] },
     };
     expect(gen.generate([cond])).toBe(
@@ -124,10 +125,42 @@ describe('ReactGenerator', () => {
       body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'item' }], children: [] },
     };
     const cond: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'hasItems', body: loop,
+      type: 'cond', negate: false, condition: 'hasItems', elseBody: null, body: loop,
     };
     expect(gen.generate([cond])).toBe(
       `hasItems ? items.map((item) => React.createElement('li', null, item)) : null`
+    );
+  });
+
+  it('renders negated conditional', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', negate: true, condition: 'isHidden', elseBody: null,
+      body: el('p', { text: lit('Visible') }),
+    };
+    expect(gen.generate([cond])).toBe(
+      `!isHidden ? React.createElement('p', null, "Visible") : null`
+    );
+  });
+
+  it('renders else branch as ternary', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', negate: false, condition: 'loggedIn', elseBody: el('p', { text: lit('Log in') }),
+      body: el('p', { text: lit('Welcome') }),
+    };
+    expect(gen.generate([cond])).toBe(
+      `loggedIn ? React.createElement('p', null, "Welcome") : React.createElement('p', null, "Log in")`
+    );
+  });
+
+  it('renders dynamic attribute with $var as template literal', () => {
+    const ast = [el('a', {
+      attributes: {
+        href: [{ kind: 'literal', value: '/posts/' }, { kind: 'var', name: 'slug' }],
+      },
+      text: lit('Read'),
+    })];
+    expect(gen.generate(ast)).toBe(
+      'React.createElement(\'a\', { href: `/posts/${slug}` }, "Read")'
     );
   });
 });

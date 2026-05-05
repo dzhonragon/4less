@@ -52,7 +52,24 @@ input type:"email" placeholder:"you@example.com" required:"true"
 img src:"/logo.png" alt:"Logo" width:"64" height:"64"
 ```
 
-Attribute values must be quoted strings. Boolean attributes use the string `"true"` or just the key without a value (HTML serialization depends on the generator).
+Attribute values must be quoted strings. Boolean attributes use the string `"true"`.
+
+### Variable interpolation in attributes
+
+Embed `$variable` references directly inside attribute value strings:
+
+```
+a "Profile" href:"/users/$username"
+img src:"/avatars/$userId.png" alt:$name
+```
+
+```ts
+compile(src, { username: 'alice', userId: '42', name: 'Alice' });
+// → <a href="/users/alice">Profile</a>
+// → <img src="/avatars/42.png" alt="Alice"/>
+```
+
+Each generator outputs the appropriate form: static attribute for plain strings, dynamic binding (`:attr`, template literal, JSX expression) when variables are present.
 
 ## Children
 
@@ -82,31 +99,25 @@ div.card {
 
 ## Variables
 
-Declare variables with `$name` in text positions. Pass values at compile time via the `vars` option:
+Declare variables with `$name` in text positions or inside attribute strings. Pass values at compile time via the `vars` option:
 
 ```
 div {
   h1 $title
   p $description
-  a "Read more" href:$link
+  a "Read more" href:"/posts/$slug"
 }
 ```
 
 ```ts
 compile(src, {
-  vars: {
-    title:       'Getting started',
-    description: 'Write less HTML.',
-    link:        '/guide/',
-  }
+  title:       'Getting started',
+  description: 'Write less HTML.',
+  slug:        'getting-started',
 });
 ```
 
-Variable values can be strings or arrays (arrays are used by loops):
-
-```ts
-type VarValue = string | string[];
-```
+Variable values can be strings, arrays (for loops), or booleans (for conditionals).
 
 ## Loops
 
@@ -119,7 +130,7 @@ ul {
 ```
 
 ```ts
-compile(src, { vars: { skills: ['TypeScript', 'React', 'Tailwind'] } });
+compile(src, { skills: ['TypeScript', 'React', 'Tailwind'] });
 // → <ul><li>TypeScript</li><li>React</li><li>Tailwind</li></ul>
 ```
 
@@ -145,7 +156,36 @@ div {
 }
 ```
 
-The condition is truthy when the variable is set and not falsy (empty string, `"false"`, `"0"`, or absent).
+The condition is truthy when the variable is set and not falsy (empty string, `"false"`, `"0"`, boolean `false`, or absent).
+
+### Negation
+
+Prefix the condition with `!` to negate it:
+
+```
+if !isHidden: div.banner {
+  p "This is visible when isHidden is falsy"
+}
+```
+
+### Else
+
+Optionally add `else:` immediately after the if-body:
+
+```
+if isLoggedIn: p "Welcome back!"
+else: p "Please log in."
+```
+
+### Else-if
+
+Chain conditions with `else-if condition:`:
+
+```
+if isPremium: span.badge "Premium"
+else-if isTrial: span.badge "Trial"
+else: span.badge "Free"
+```
 
 Conditionals can wrap any element, including containers:
 
@@ -153,6 +193,9 @@ Conditionals can wrap any element, including containers:
 if showBanner: div.banner {
   p $bannerText
   a "Dismiss" href:"#"
+}
+else: div.placeholder {
+  p "No banner today."
 }
 ```
 
@@ -176,12 +219,12 @@ component Card {
   div.card {
     h3 $title
     p $body
-    a "Read more" href:$link
+    a "Read more" href:"/posts/$slug"
   }
 }
 
-Card title:"Getting started" body:"Install in seconds." link:"/guide/"
-Card title:"Zero deps"      body:"No runtime bloat."  link:"/guide/api-reference/"
+Card title:"Getting started" body:"Install in seconds." slug:"getting-started"
+Card title:"Zero deps"      body:"No runtime bloat."  slug:"api-reference"
 ```
 
 Components can be nested — a component may call another component:

@@ -37,7 +37,6 @@ export class AstroGenerator extends BaseGenerator {
     return rendered;
   }
 
-  // Renders a node as a template string (elements as JSX tags, loops/conds in {})
   private renderNode(node: AstNode): string {
     if (node.type === 'loop') return `{${this.renderLoopExpr(node)}}`;
     if (node.type === 'cond') return `{${this.renderCondExpr(node)}}`;
@@ -45,18 +44,20 @@ export class AstroGenerator extends BaseGenerator {
     throw new Error(`component node '${node.type}' must be expanded before generation`);
   }
 
-  // Returns the raw expression for a loop — without surrounding {}
   private renderLoopExpr(node: LoopNode): string {
     return `${node.iterable}.map((${node.variable}) => ${this.renderElement(node.body)})`;
   }
 
-  // Returns the raw expression for a cond — without surrounding {}
   private renderCondExpr(node: CondNode): string {
+    const condExpr = node.negate ? `!${node.condition}` : node.condition;
     const bodyExpr = this.renderNodeExpr(node.body);
-    return `${node.condition} && ${bodyExpr}`;
+    if (node.elseBody != null) {
+      const elseExpr = this.renderNodeExpr(node.elseBody);
+      return `${condExpr} ? ${bodyExpr} : ${elseExpr}`;
+    }
+    return `${condExpr} && ${bodyExpr}`;
   }
 
-  // Renders a node as an expression (no outer {} wrapping for loops/conds)
   private renderNodeExpr(node: AstNode): string {
     if (node.type === 'loop') return this.renderLoopExpr(node);
     if (node.type === 'cond') return `(${this.renderCondExpr(node)})`;
@@ -78,7 +79,8 @@ export class AstroGenerator extends BaseGenerator {
       return `<${node.tag}${attrsStr}>${this.renderText(node.text)}</${node.tag}>`;
     }
 
-    return isVoid ? `<${node.tag}${attrsStr} />` : `<${node.tag}${attrsStr} />`;
+    // Fix: non-void empty elements must use explicit closing tag, not self-close
+    return isVoid ? `<${node.tag}${attrsStr} />` : `<${node.tag}${attrsStr}></${node.tag}>`;
   }
 
   private renderText(segments: TextSegment[]): string {
@@ -87,14 +89,29 @@ export class AstroGenerator extends BaseGenerator {
     ).join('');
   }
 
+  /** Renders attribute TextSegment[] as static attr or JSX expression. */
+  private renderAttrPart(key: string, segments: TextSegment[]): string {
+    const allLiteral = segments.every(s => s.kind === 'literal');
+    if (allLiteral) {
+      const value = segments.map(s => this.escapeAttr((s as { kind: 'literal'; value: string }).value)).join('');
+      return `${key}="${value}"`;
+    }
+    const expr = segments.map(seg =>
+      seg.kind === 'literal'
+        ? seg.value.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')
+        : `\${${seg.name}}`
+    ).join('');
+    return `${key}={\`${expr}\`}`;
+  }
+
   private buildAttrs(node: ElementNode): string {
     const parts: string[] = [];
     if (node.id) parts.push(`id="${this.escapeAttr(node.id)}"`);
     if (node.classes.length > 0) {
       parts.push(`class="${node.classes.map(c => this.escapeAttr(c)).join(' ')}"`);
     }
-    for (const [key, value] of Object.entries(node.attributes)) {
-      parts.push(`${key}="${this.escapeAttr(value)}"`);
+    for (const [key, segs] of Object.entries(node.attributes)) {
+      parts.push(this.renderAttrPart(key, segs));
     }
     return parts.join(' ');
   }

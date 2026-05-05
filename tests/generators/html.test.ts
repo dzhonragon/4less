@@ -4,6 +4,8 @@ import type { ElementNode, TextSegment } from '../../src/core/types.js';
 
 const lit = (value: string): TextSegment[] => [{ kind: 'literal', value }];
 const varSeg = (name: string): TextSegment[] => [{ kind: 'var', name }];
+/** Wraps a plain string as a single-literal TextSegment[] for use in attributes. */
+const attr = (value: string): TextSegment[] => [{ kind: 'literal', value }];
 
 describe('HtmlGenerator', () => {
   const gen = new HtmlGenerator();
@@ -24,7 +26,7 @@ describe('HtmlGenerator', () => {
 
   it('generates void elements self-closing', () => {
     const ast: ElementNode[] = [
-      { type: 'element', tag: 'meta', id: null, classes: [], attributes: { charset: 'UTF-8' }, text: null, children: [] },
+      { type: 'element', tag: 'meta', id: null, classes: [], attributes: { charset: attr('UTF-8') }, text: null, children: [] },
     ];
     expect(gen.generate(ast)).toBe('<meta charset="UTF-8"/>');
   });
@@ -45,7 +47,7 @@ describe('HtmlGenerator', () => {
 
   it('escapes HTML in attributes', () => {
     const ast: ElementNode[] = [
-      { type: 'element', tag: 'a', id: null, classes: [], attributes: { onclick: 'alert("xss")' }, text: lit('click'), children: [] },
+      { type: 'element', tag: 'a', id: null, classes: [], attributes: { onclick: attr('alert("xss")') }, text: lit('click'), children: [] },
     ];
     expect(gen.generate(ast)).toContain('&quot;');
   });
@@ -138,7 +140,7 @@ describe('HtmlGenerator', () => {
 
   it('renders nothing when condition is false', () => {
     const cond: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'show',
+      type: 'cond', negate: false, condition: 'show', elseBody: null,
       body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Hi'), children: [] },
     };
     const genFalse = new HtmlGenerator({ vars: { show: false } });
@@ -147,7 +149,7 @@ describe('HtmlGenerator', () => {
 
   it('renders body when condition is true', () => {
     const cond: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'show',
+      type: 'cond', negate: false, condition: 'show', elseBody: null,
       body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Hi'), children: [] },
     };
     const genTrue = new HtmlGenerator({ vars: { show: true } });
@@ -156,7 +158,7 @@ describe('HtmlGenerator', () => {
 
   it('renders nothing when condition variable is undefined', () => {
     const cond: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'missing',
+      type: 'cond', negate: false, condition: 'missing', elseBody: null,
       body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Hi'), children: [] },
     };
     expect(gen.generate([cond])).toBe('');
@@ -164,11 +166,43 @@ describe('HtmlGenerator', () => {
 
   it('renders conditional inside parent element', () => {
     const cond: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'show',
+      type: 'cond', negate: false, condition: 'show', elseBody: null,
       body: { type: 'element', tag: 'span', id: null, classes: [], attributes: {}, text: lit('yes'), children: [] },
     };
     const div: ElementNode = { type: 'element', tag: 'div', id: null, classes: [], attributes: {}, text: null, children: [cond] };
     const genTrue = new HtmlGenerator({ vars: { show: true } });
     expect(genTrue.generate([div])).toBe('<div><span>yes</span></div>');
+  });
+
+  it('renders else branch when condition is false', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', negate: false, condition: 'isLoggedIn', elseBody:
+        { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Please log in'), children: [] },
+      body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Welcome'), children: [] },
+    };
+    const genFalse = new HtmlGenerator({ vars: { isLoggedIn: false } });
+    expect(genFalse.generate([cond])).toBe('<p>Please log in</p>');
+  });
+
+  it('renders negated condition', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', negate: true, condition: 'isHidden', elseBody: null,
+      body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Visible'), children: [] },
+    };
+    const genHidden = new HtmlGenerator({ vars: { isHidden: false } });
+    expect(genHidden.generate([cond])).toBe('<p>Visible</p>');
+    const genShown = new HtmlGenerator({ vars: { isHidden: true } });
+    expect(genShown.generate([cond])).toBe('');
+  });
+
+  it('interpolates $var in attribute values', () => {
+    const genVars = new HtmlGenerator({ vars: { slug: 'hello-world' } });
+    const ast: ElementNode[] = [{
+      type: 'element', tag: 'a', id: null, classes: [], attributes: {
+        href: [{ kind: 'literal', value: '/posts/' }, { kind: 'var', name: 'slug' }],
+      },
+      text: lit('Read'), children: [],
+    }];
+    expect(genVars.generate(ast)).toBe('<a href="/posts/hello-world">Read</a>');
   });
 });

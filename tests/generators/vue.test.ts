@@ -3,6 +3,7 @@ import { VueGenerator } from '../../src/generators/vue.js';
 import type { ElementNode, TextSegment } from '../../src/core/types.js';
 
 const lit = (value: string): TextSegment[] => [{ kind: 'literal', value }];
+const attr = (value: string): TextSegment[] => [{ kind: 'literal', value }];
 
 const el = (tag: string, overrides: Partial<ElementNode> = {}): ElementNode => ({
   type: 'element', tag, id: null, classes: [], attributes: {}, text: null, children: [],
@@ -17,7 +18,7 @@ describe('VueGenerator', () => {
   });
 
   it('renders void element as self-closing', () => {
-    expect(gen.generate([el('meta', { attributes: { charset: 'UTF-8' } })])).toBe('<meta charset="UTF-8"/>');
+    expect(gen.generate([el('meta', { attributes: { charset: attr('UTF-8') } })])).toBe('<meta charset="UTF-8"/>');
   });
 
   it('renders text content', () => {
@@ -35,7 +36,7 @@ describe('VueGenerator', () => {
     expect(gen.generate(ast)).toBe('<div><p>World</p></div>');
   });
 
-  it('renders multiple root elements (for v-html or slot wrapping)', () => {
+  it('renders multiple root elements', () => {
     const ast = [el('h1', { text: lit('A') }), el('p', { text: lit('B') })];
     expect(gen.generate(ast)).toBe('<h1>A</h1><p>B</p>');
   });
@@ -84,7 +85,7 @@ describe('VueGenerator', () => {
 
   it('renders conditional as v-if on element', () => {
     const cond: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'isVisible',
+      type: 'cond', negate: false, condition: 'isVisible', elseBody: null,
       body: { type: 'element', tag: 'p', id: null, classes: [], attributes: {}, text: lit('Hello'), children: [] },
     };
     expect(gen.generate([cond])).toBe('<p v-if="isVisible">Hello</p>');
@@ -96,7 +97,7 @@ describe('VueGenerator', () => {
       body: { type: 'element', tag: 'li', id: null, classes: [], attributes: {}, text: [{ kind: 'var', name: 'item' }], children: [] },
     };
     const cond: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'hasItems', body: loop,
+      type: 'cond', negate: false, condition: 'hasItems', elseBody: null, body: loop,
     };
     expect(gen.generate([cond])).toBe(
       '<template v-if="hasItems"><li v-for="item in items" :key="item">{{ item }}</li></template>'
@@ -105,9 +106,38 @@ describe('VueGenerator', () => {
 
   it('renders conditional with existing element attributes', () => {
     const cond: import('../../src/core/types.js').CondNode = {
-      type: 'cond', condition: 'show',
+      type: 'cond', negate: false, condition: 'show', elseBody: null,
       body: { type: 'element', tag: 'div', id: 'app', classes: ['box'], attributes: {}, text: null, children: [] },
     };
     expect(gen.generate([cond])).toBe('<div id="app" class="box" v-if="show"></div>');
+  });
+
+  it('renders negated conditional', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', negate: true, condition: 'isHidden', elseBody: null,
+      body: el('p', { text: lit('Visible') }),
+    };
+    expect(gen.generate([cond])).toBe('<p v-if="!isHidden">Visible</p>');
+  });
+
+  it('renders if/else as v-if + v-else template pair', () => {
+    const cond: import('../../src/core/types.js').CondNode = {
+      type: 'cond', negate: false, condition: 'loggedIn',
+      body: el('p', { text: lit('Welcome') }),
+      elseBody: el('p', { text: lit('Log in') }),
+    };
+    expect(gen.generate([cond])).toBe(
+      '<template v-if="loggedIn"><p>Welcome</p></template><template v-else><p>Log in</p></template>'
+    );
+  });
+
+  it('renders dynamic attribute with $var as :attr binding', () => {
+    const ast = [el('a', {
+      attributes: {
+        href: [{ kind: 'literal', value: '/posts/' }, { kind: 'var', name: 'slug' }],
+      },
+      text: lit('Read'),
+    })];
+    expect(gen.generate(ast)).toBe('<a :href="`/posts/${slug}`">Read</a>');
   });
 });
